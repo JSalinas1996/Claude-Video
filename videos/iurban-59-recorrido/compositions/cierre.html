@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <template id="cierre">
+      <style>
+        #cierre-root { position: absolute; inset: 0; overflow: hidden; }
+        #cierre-card { background: var(--ink); }
+        #cierre-stack { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+          justify-content: center; text-align: center; padding: var(--top) var(--gutter) var(--bottom); }
+        #cierre-logo { display: block; width: 600px; height: auto; }
+        #cierre-rule { transform-origin: 50% 50%; margin: 56px auto 54px; }
+        #cierre-cta { display: block; font-family: var(--serif); font-size: var(--t-cta); line-height: 1.05; }
+        #cierre-phone { display: block; margin-top: 20px; font-weight: 500; font-size: var(--t-phone); letter-spacing: 3px; color: var(--line); }
+        #cierre-dir { position: absolute; left: 0; right: 0; bottom: 72px; text-align: center; font-weight: 500;
+          font-size: var(--t-meta); letter-spacing: 5px; text-transform: uppercase; color: rgba(255,255,255,0.7); }
+      </style>
+      <div id="cierre-root" data-composition-id="cierre" data-width="1080" data-height="1350">
+        <div class="layer" id="cierre-card">
+          <div id="cierre-stack">
+            <img id="cierre-logo" src="assets/images/logo-blanco.png" alt="Iurban Estudio &amp; Constructora" />
+            <span class="rule" id="cierre-rule"></span>
+            <span id="cierre-cta">Consultá por WhatsApp</span>
+            <span id="cierre-phone">221 616-1752</span>
+          </div>
+          <span id="cierre-dir">59 e/ 9 y 10 · La Plata</span>
+        </div>
+      </div>
+      <script>
+        // Tiempos locales (s). Slot: 20.6 → 24.0 global. Hold quieto desde ~2.3.
+        const T = { bg: 0, logo: 0.55, rule: 0.95, cta: 1.1, phone: 1.25, dir: 1.45 };
+        const IN = { dur: 0.9, ease: "power3.out", y: 24 };
+        const OUT = { dur: 0.45, ease: "power2.in" };
+        const enter = (tl, sel, at, y = IN.y, dur = IN.dur) =>
+          tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: IN.ease }, at);
+        const leave = (tl, sel, at) =>
+          tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: OUT.dur, ease: OUT.ease, immediateRender: false }, at);
+        const draw = (tl, sel, at, dur = 0.8) =>
+          tl.fromTo(sel, { scaleX: 0 }, { scaleX: 1, duration: dur, ease: "power2.inOut" }, at);
+        Promise.all([
+          document.fonts.load('400 92px "Instrument Serif"'),
+          document.fonts.load('italic 400 92px "Instrument Serif"'),
+          document.fonts.load('400 32px "Hanken Grotesk"'),
+          document.fonts.load('500 22px "Hanken Grotesk"'),
+        ]).then(() => document.fonts.ready).then(() => {
+          const tl = gsap.timeline({ paused: true });
+          tl.fromTo("#cierre-card", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "sine.inOut" }, T.bg);
+          tl.fromTo("#cierre-logo", { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 1.0, ease: "power3.out" }, T.logo);
+          draw(tl, "#cierre-rule", T.rule, 0.7);
+          enter(tl, "#cierre-cta", T.cta, 22);
+          enter(tl, "#cierre-phone", T.phone, 16);
+          enter(tl, "#cierre-dir", T.dir, 10);
+          window.__timelines["cierre"] = tl;
+        });
+      </script>
+    </template>
+  </body>
+</html>
