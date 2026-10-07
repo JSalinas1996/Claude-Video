@@ -1,3 +1,4 @@
 snapshots/
 renders/
 *.mp4
+.hyperframes/preview/
