@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template id="superficies">
+      <style>
+        #superficies-root { position: absolute; inset: 0; overflow: hidden; }
+        #superficies-img { object-position: 60% 50%; }
+      </style>
+      <div data-hf-id="hf-mfj4" id="superficies-root" data-composition-id="superficies" data-width="1080" data-height="1920">
+        <div data-hf-id="hf-49ko" class="layer shot" id="superficies-shot">
+          <div data-hf-id="hf-6e42" class="cam" id="superficies-cam" data-layout-allow-overflow="">
+            <img data-hf-id="hf-02ro" id="superficies-img" src="assets/images/arbol.jpg" alt="">
+          </div>
+          <div data-hf-id="hf-s7sx" class="layer scrim"></div>
+        </div>
+        <div data-hf-id="hf-l0sq" class="layer copy">
+          <div data-hf-id="hf-74pf" class="group" id="superficies-g">
+            <span data-hf-id="hf-oz2q" class="display" id="superficies-title">53 – 59 m²</span>
+            <span data-hf-id="hf-owwv" class="body" id="superficies-body">Al frente y contrafrente · 10 pisos</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        // Tiempos locales (s). Slot: 9.7 → 12.8 global.
+        const T = { dur: 3.1, xfade: 0.6, title: 0.55, body: 0.75, out: 2.25 };
+        const IN = { dur: 0.85, ease: "power3.out", y: 26 };
+        const OUT = { dur: 0.4, ease: "power2.in" };
+        const enter = (tl, sel, at, y = IN.y, dur = IN.dur) =>
+          tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: IN.ease }, at);
+        const leave = (tl, sel, at) =>
+          tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: OUT.dur, ease: OUT.ease, immediateRender: false }, at);
+        Promise.all([
+          document.fonts.load('400 120px "Instrument Serif"'),
+          document.fonts.load('italic 400 120px "Instrument Serif"'),
+          document.fonts.load('400 38px "Hanken Grotesk"'),
+          document.fonts.load('500 26px "Hanken Grotesk"'),
+        ]).then(() => document.fonts.ready).then(() => {
+          const tl = gsap.timeline({ paused: true });
+          tl.fromTo("#superficies-shot", { opacity: 0 }, { opacity: 1, duration: T.xfade, ease: "sine.inOut" }, 0);
+          tl.fromTo("#superficies-cam", { scale: 1.0 }, { scale: 1.05, duration: T.dur, ease: "none" }, 0);
+          enter(tl, "#superficies-title", T.title, 32, 0.95);
+          enter(tl, "#superficies-body", T.body, 20);
+          leave(tl, "#superficies-g", T.out);
+          window.__timelines["superficies"] = tl;
+        });
+      </script>
+    </template>
+  </body>
+</html>

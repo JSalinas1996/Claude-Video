@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template id="cierre">
+      <style>
+        #cierre-root { position: absolute; inset: 0; overflow: hidden; }
+      </style>
+      <div data-hf-id="hf-a5xk" id="cierre-root" data-composition-id="cierre" data-width="1080" data-height="1920">
+        <div data-hf-id="hf-rwat" class="layer endcard" id="cierre-card">
+          <div data-hf-id="hf-d1zs" class="stack">
+            <img data-hf-id="hf-yffx" id="logo" src="assets/images/logo-blanco.png" alt="Iurban Estudio & Constructora">
+            <span data-hf-id="hf-emsi" class="rule" id="cierre-rule"></span>
+            <span data-hf-id="hf-h81s" class="cta" id="cierre-cta">Consultá por WhatsApp</span>
+            <span data-hf-id="hf-8pwq" class="phone" id="cierre-phone">221 616-1752</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        // Tiempos locales (s). Slot: 12.2 → 15 global. Hold quieto desde ~2.2.
+        const T = { bg: 0, logo: 0.55, rule: 0.95, cta: 1.1, phone: 1.25 };
+        const IN = { dur: 0.85, ease: "power3.out", y: 26 };
+        const OUT = { dur: 0.4, ease: "power2.in" };
+        const enter = (tl, sel, at, y = IN.y, dur = IN.dur) =>
+          tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: IN.ease }, at);
+        const leave = (tl, sel, at) =>
+          tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: OUT.dur, ease: OUT.ease, immediateRender: false }, at);
+        Promise.all([
+          document.fonts.load('400 120px "Instrument Serif"'),
+          document.fonts.load('italic 400 120px "Instrument Serif"'),
+          document.fonts.load('400 38px "Hanken Grotesk"'),
+          document.fonts.load('500 26px "Hanken Grotesk"'),
+        ]).then(() => document.fonts.ready).then(() => {
+          const tl = gsap.timeline({ paused: true });
+          tl.fromTo("#cierre-card", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "sine.inOut" }, T.bg);
+          tl.fromTo("#logo", { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 1.0, ease: "power3.out" }, T.logo);
+          tl.fromTo("#cierre-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: "power2.inOut" }, T.rule);
+          enter(tl, "#cierre-cta", T.cta, 22);
+          enter(tl, "#cierre-phone", T.phone, 16);
+          window.__timelines["cierre"] = tl;
+        });
+      </script>
+    </template>
+  </body>
+</html>

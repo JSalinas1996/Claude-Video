@@ -1,10 +1,64 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="es">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=1920, height=1080" />
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080, height=1920">
+    <script src="assets/vendor/gsap.min.js"></script>
     <style>
+      /* ---------- Tipografías locales (marca Iurban) ---------- */
+      @font-face {
+        font-family: "Instrument Serif";
+        src: url("assets/fonts/instrument-serif-latin-400-normal.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Instrument Serif";
+        src: url("assets/fonts/instrument-serif-latin-400-italic.woff2") format("woff2");
+        font-weight: 400;
+        font-style: italic;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Hanken Grotesk";
+        src: url("assets/fonts/hanken-grotesk-latin-400-normal.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Hanken Grotesk";
+        src: url("assets/fonts/hanken-grotesk-latin-500-normal.woff2") format("woff2");
+        font-weight: 500;
+        font-style: normal;
+        font-display: block;
+      }
+
+      /* ---------- Design tokens ---------- */
+      :root {
+        --ink: #1b1b19;
+        --stone: #f3f1ec;
+        --line: #dcd8ce;
+        --paper: #ffffff;
+        --serif: "Instrument Serif", serif;
+        --sans: "Hanken Grotesk", sans-serif;
+
+        --gutter: 80px; /* margen lateral */
+        --safe-bottom: 340px; /* franja inferior que ocupa la UI de Stories */
+        --safe-top: 250px;
+
+        --t-display: 150px; /* dirección, m² */
+        --t-title: 120px; /* lema, tipología */
+        --t-kicker: 26px;
+        --t-body: 38px;
+        --t-cta: 76px;
+        --t-phone: 44px;
+
+        --rule-w: 120px;
+        --rule-h: 2px;
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -12,44 +66,181 @@
       }
       html,
       body {
-        margin: 0;
-        width: 1920px;
-        height: 1080px;
+        width: 1080px;
+        height: 1920px;
         overflow: hidden;
-        background: #0a0a0a;
+        background: var(--ink);
       }
       #root {
+        position: relative;
         width: 100%;
         height: 100%;
+        overflow: hidden;
+        font-family: var(--sans);
+        color: var(--paper);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Slots de escena: ocupan todo el lienzo */
+      #root > div[data-composition-src] {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* ---------- Capas y clases compartidas por las escenas ---------- */
+      .layer {
+        position: absolute;
+        inset: 0;
+      }
+      .bg-ink {
+        background: var(--ink);
+      }
+      .shot {
+        overflow: hidden;
+      }
+      .shot .cam {
+        position: absolute;
+        inset: 0;
+        transform-origin: 50% 55%;
+        will-change: transform;
+      }
+      .shot img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .scrim {
+        background: linear-gradient(
+          to top,
+          rgba(27, 27, 25, 0.82) 0%,
+          rgba(27, 27, 25, 0.55) 22%,
+          rgba(27, 27, 25, 0) 48%
+        );
+      }
+
+      /* ---------- Texto sobre foto (abajo a la izquierda) ---------- */
+      .copy {
         display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-start;
+        padding: var(--safe-top) var(--gutter) var(--safe-bottom);
+      }
+      .copy .group {
+        width: 100%;
+        max-width: 920px;
+      }
+      .kicker {
+        display: block;
+        font-family: var(--sans);
+        font-weight: 500;
+        font-size: var(--t-kicker);
+        letter-spacing: 6px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.88);
+      }
+      .rule {
+        display: block;
+        width: var(--rule-w);
+        height: var(--rule-h);
+        background: var(--paper);
+        transform-origin: 0% 50%;
+        margin: 28px 0 30px;
+      }
+      .display,
+      .title {
+        display: block;
+        font-family: var(--serif);
+        font-weight: 400;
+        line-height: 1;
+        letter-spacing: -0.5px;
+      }
+      .display {
+        font-size: var(--t-display);
+      }
+      .title {
+        font-size: var(--t-title);
+      }
+      .title .line {
+        display: block;
+      }
+      em {
+        font-style: italic;
+      }
+      .body {
+        display: block;
+        margin-top: 30px;
+        font-family: var(--sans);
+        font-weight: 400;
+        font-size: var(--t-body);
+        line-height: 1.3;
+        color: var(--line);
+      }
+      .kicker + .title {
+        margin-top: 28px;
+      }
+
+      /* ---------- Cierre ---------- */
+      .endcard {
+        background: var(--ink);
+      }
+      .endcard .stack {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        text-align: center;
+        padding: var(--safe-top) var(--gutter) var(--safe-bottom);
       }
-      #title {
-        color: #f4f4f5;
-        font-size: 72px;
-        font-weight: 600;
-        letter-spacing: -0.03em;
+      #logo {
+        display: block;
+        width: 680px;
+        height: auto;
+      }
+      #cierre-rule {
+        transform-origin: 50% 50%;
+        margin: 64px auto 60px;
+      }
+      .cta {
+        display: block;
+        font-family: var(--serif);
+        font-size: var(--t-cta);
+        line-height: 1.05;
+      }
+      .phone {
+        display: block;
+        margin-top: 22px;
+        font-family: var(--sans);
+        font-weight: 500;
+        font-size: var(--t-phone);
+        letter-spacing: 3px;
+        color: var(--line);
       }
     </style>
   </head>
   <body>
-    <div
-      id="root"
-      data-composition-id="main"
-      data-start="0"
-      data-duration="10"
-      data-width="1920"
-      data-height="1080"
-    >
-      <h1 id="title" class="clip" data-start="0" data-duration="10" data-track-index="0">Title</h1>
+    <div data-hf-id="hf-qv3y" id="root" data-composition-id="main" data-start="0" data-duration="15" data-width="1080" data-height="1920">
+      <!-- Fondo base -->
+      <div data-hf-id="hf-soym" id="base" class="layer bg-ink clip" data-start="0" data-duration="15" data-track-index="0"></div>
+
+      <!-- Escenas (tiempos globales; los fundidos cruzados se solapan 0,6 s) -->
+      <div data-hf-id="hf-q07q" id="el-fachada" data-composition-id="fachada" data-composition-src="compositions/fachada.html" data-start="0" data-duration="7.3" data-track-index="1" data-width="1080" data-height="1920"></div>
+      <div data-hf-id="hf-9vnm" id="el-unidades" data-composition-id="unidades" data-composition-src="compositions/unidades.html" data-start="6.7" data-duration="3.6" data-track-index="2" data-width="1080" data-height="1920"></div>
+      <div data-hf-id="hf-4sja" id="el-superficies" data-composition-id="superficies" data-composition-src="compositions/superficies.html" data-start="9.7" data-duration="3.1" data-track-index="3" data-width="1080" data-height="1920"></div>
+      <div data-hf-id="hf-zvms" id="el-cierre" data-composition-id="cierre" data-composition-src="compositions/cierre.html" data-start="12.2" data-duration="2.8" data-track-index="4" data-width="1080" data-height="1920"></div>
+
+      <!-- Fundido de entrada desde ink -->
+      <div data-hf-id="hf-e6um" id="fade-in" class="layer bg-ink clip" data-start="0" data-duration="0.6" data-track-index="5"></div>
     </div>
+
     <script>
       const tl = gsap.timeline({ paused: true });
-      // Example: tl.fromTo("#title", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 }, 0);
+      tl.fromTo("#fade-in", { opacity: 1 }, { opacity: 0, duration: 0.5, ease: "power1.out" }, 0);
       window.__timelines["main"] = tl;
-      tl.seek(0);
     </script>
   </body>
 </html>

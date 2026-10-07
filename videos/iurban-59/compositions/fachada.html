@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template id="fachada">
+      <style>
+        #fachada-root { position: absolute; inset: 0; overflow: hidden; }
+        #fachada-dia, #fachada-noche { object-position: 50% 50%; }
+      </style>
+      <div data-hf-id="hf-jmb4" id="fachada-root" data-composition-id="fachada" data-width="1080" data-height="1920">
+        <!-- Frames 1–2: una sola cámara; las luces se encienden sobre el mismo encuadre -->
+        <div data-hf-id="hf-u36d" class="layer shot">
+          <div data-hf-id="hf-nw3e" class="cam" id="fachada-cam" data-layout-allow-overflow="">
+            <img data-hf-id="hf-epo4" id="fachada-dia" src="assets/images/fachada-dia.jpg" alt="">
+            <img data-hf-id="hf-0jvg" id="fachada-noche" src="assets/images/fachada-noche.jpg" alt="">
+          </div>
+        </div>
+        <div data-hf-id="hf-s7sx" class="layer scrim"></div>
+
+        <div data-hf-id="hf-l0sq" class="layer copy">
+          <div data-hf-id="hf-lzv4" class="group" id="fachada-g1">
+            <span data-hf-id="hf-2g0t" class="kicker" id="fachada-kicker">En construcción · La Plata</span>
+            <span data-hf-id="hf-znh0" class="rule" id="fachada-rule"></span>
+            <span data-hf-id="hf-b9hx" class="display" id="fachada-title">59 e/ 9 y 10</span>
+          </div>
+        </div>
+
+        <div data-hf-id="hf-a5u6" class="layer copy">
+          <div data-hf-id="hf-unqz" class="group" id="fachada-g2">
+            <span data-hf-id="hf-h46t" class="title">
+              <span data-hf-id="hf-18x2" class="line" id="fachada-l1">Enfocados en</span>
+              <span data-hf-id="hf-gd9y" class="line" id="fachada-l2"><em data-hf-id="hf-suir">cada detalle</em>.</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <script>
+        // Tiempos locales (s). Slot: 0 → 7.3 global.
+        const T = {
+          dur: 7.3,
+          lightsOn: { at: 3.3, dur: 1.4 },
+          f1: { kicker: 0.5, rule: 0.7, title: 0.85, out: 3.0 },
+          f2: { l1: 4.5, l2: 4.68, out: 6.45 },
+        };
+        const IN = { dur: 0.85, ease: "power3.out", y: 26 };
+        const OUT = { dur: 0.4, ease: "power2.in" };
+        const enter = (tl, sel, at, y = IN.y, dur = IN.dur) =>
+          tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: IN.ease }, at);
+        const leave = (tl, sel, at) =>
+          tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: OUT.dur, ease: OUT.ease, immediateRender: false }, at);
+        Promise.all([
+          document.fonts.load('400 120px "Instrument Serif"'),
+          document.fonts.load('italic 400 120px "Instrument Serif"'),
+          document.fonts.load('400 38px "Hanken Grotesk"'),
+          document.fonts.load('500 26px "Hanken Grotesk"'),
+        ]).then(() => document.fonts.ready).then(() => {
+          const tl = gsap.timeline({ paused: true });
+          tl.fromTo("#fachada-cam", { scale: 1.0 }, { scale: 1.06, duration: T.dur, ease: "none" }, 0);
+          tl.fromTo("#fachada-noche", { opacity: 0 }, { opacity: 1, duration: T.lightsOn.dur, ease: "sine.inOut" }, T.lightsOn.at);
+
+          enter(tl, "#fachada-kicker", T.f1.kicker, 18);
+          tl.fromTo("#fachada-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.8, ease: "power2.inOut" }, T.f1.rule);
+          enter(tl, "#fachada-title", T.f1.title, 32, 0.95);
+          leave(tl, "#fachada-g1", T.f1.out);
+
+          enter(tl, "#fachada-l1", T.f2.l1, 28, 0.95);
+          enter(tl, "#fachada-l2", T.f2.l2, 28, 0.95);
+          leave(tl, "#fachada-g2", T.f2.out);
+
+          window.__timelines["fachada"] = tl;
+        });
+      </script>
+    </template>
+  </body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template id="unidades">
+      <style>
+        #unidades-root { position: absolute; inset: 0; overflow: hidden; }
+        #unidades-img { object-position: 0% 50%; }
+      </style>
+      <div data-hf-id="hf-02ue" id="unidades-root" data-composition-id="unidades" data-width="1080" data-height="1920">
+        <div data-hf-id="hf-vmi7" class="layer shot" id="unidades-shot">
+          <div data-hf-id="hf-0mp1" class="cam" id="unidades-cam" data-layout-allow-overflow="">
+            <img data-hf-id="hf-fs68" id="unidades-img" src="assets/images/contrapicado.jpg" alt="">
+          </div>
+          <div data-hf-id="hf-s7sx" class="layer scrim"></div>
+        </div>
+        <div data-hf-id="hf-l0sq" class="layer copy">
+          <div data-hf-id="hf-wc52" class="group" id="unidades-g">
+            <span data-hf-id="hf-pgti" class="kicker" id="unidades-kicker">Las unidades</span>
+            <span data-hf-id="hf-nktm" class="title" id="unidades-title">1 dormitorio</span>
+            <span data-hf-id="hf-d8mr" class="body" id="unidades-body">Balcón · Lavadero · Placard vestidor</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        // Tiempos locales (s). Slot: 6.7 → 10.3 global.
+        const T = { dur: 3.6, xfade: 0.6, kicker: 0.55, title: 0.7, body: 0.9, out: 2.85 };
+        const IN = { dur: 0.85, ease: "power3.out", y: 26 };
+        const OUT = { dur: 0.4, ease: "power2.in" };
+        const enter = (tl, sel, at, y = IN.y, dur = IN.dur) =>
+          tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: IN.ease }, at);
+        const leave = (tl, sel, at) =>
+          tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: OUT.dur, ease: OUT.ease, immediateRender: false }, at);
+        Promise.all([
+          document.fonts.load('400 120px "Instrument Serif"'),
+          document.fonts.load('italic 400 120px "Instrument Serif"'),
+          document.fonts.load('400 38px "Hanken Grotesk"'),
+          document.fonts.load('500 26px "Hanken Grotesk"'),
+        ]).then(() => document.fonts.ready).then(() => {
+          const tl = gsap.timeline({ paused: true });
+          tl.fromTo("#unidades-shot", { opacity: 0 }, { opacity: 1, duration: T.xfade, ease: "sine.inOut" }, 0);
+          tl.fromTo("#unidades-cam", { scale: 1.07, y: 0 }, { scale: 1.02, y: -30, duration: T.dur, ease: "none" }, 0);
+          enter(tl, "#unidades-kicker", T.kicker, 18);
+          enter(tl, "#unidades-title", T.title, 30, 0.95);
+          enter(tl, "#unidades-body", T.body, 20);
+          leave(tl, "#unidades-g", T.out);
+          window.__timelines["unidades"] = tl;
+        });
+      </script>
+    </template>
+  </body>
+</html>
