@@ -39,3 +39,13 @@ y renders interiores se lean como una sola pieza.
 - No mencionar artefactos/electrodomésticos. "Balcón" sin especificar frente/contrafrente.
 - Datos: 1 dormitorio, 2 ambientes, 59 m² (unidad tipo del recorrido, confirmado por el usuario).
 - En este contenedor no hay WebGL: snapshot/check necesitan --timeout 60000.
+
+## Notas de render (contenedor sin GPU)
+
+- La corrección de color está horneada en los assets (`assets/images/*-graded.jpg`, generados con el
+  motor de HyperFrames) y en el video (`assets/video/recorrido-4x5-graded.mp4`, NO versionado).
+  Los shaders WebGL en vivo trababan el render en software (~16 s/frame).
+- Regenerar el video corregido desde la copia 4:5:
+  ffmpeg -i assets/video/recorrido-4x5.mp4 -loop 1 -i vignette-mask.png -filter_complex "[0:v]format=gbrp,lut3d=file=assets/video/grade_b.cube:interp=tetrahedral[a];[1:v]format=gbrp[m];[a][m]blend=all_mode=multiply:shortest=1,noise=alls=3:allf=t+u,format=yuv420p[o]" -map "[o]" -c:v libx264 -preset slow -crf 12 -an assets/video/recorrido-4x5-graded.mp4
+  (máscara de viñeta: 1.0 en el centro → 0.86 en las esquinas, 1080×1350).
+- Transiciones (cruce del vidrio, enfoques) con filtros CSS brightness/blur en vez de los efectos animables de color grading.

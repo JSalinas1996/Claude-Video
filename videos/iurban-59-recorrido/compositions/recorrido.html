@@ -14,7 +14,7 @@
       </style>
       <div data-hf-id="hf-vgcn" id="recorrido-root" data-composition-id="recorrido" data-width="1080" data-height="1350">
         <div data-hf-id="hf-ed7f" class="layer" id="recorrido-wrap">
-          <video data-color-grading="{&quot;preset&quot;:null,&quot;intensity&quot;:1,&quot;adjust&quot;:{&quot;exposure&quot;:0.12,&quot;contrast&quot;:0.35,&quot;highlights&quot;:-0.05,&quot;shadows&quot;:0,&quot;whites&quot;:0.18,&quot;blacks&quot;:-0.18,&quot;temperature&quot;:-0.02,&quot;tint&quot;:0,&quot;vibrance&quot;:0.06,&quot;saturation&quot;:0},&quot;details&quot;:{&quot;vignette&quot;:0.16,&quot;vignetteMidpoint&quot;:0.5,&quot;vignetteRoundness&quot;:0,&quot;vignetteFeather&quot;:0.65,&quot;grain&quot;:0.04,&quot;grainSize&quot;:0.25,&quot;grainRoughness&quot;:0.5},&quot;effects&quot;:{&quot;blur&quot;:0,&quot;pixelate&quot;:0,&quot;chromaBleed&quot;:0,&quot;tapeDamage&quot;:0,&quot;tapeTracking&quot;:0,&quot;tapeNoise&quot;:1,&quot;tapeSpeed&quot;:0.5,&quot;filmArtifacts&quot;:0,&quot;halftone&quot;:0,&quot;halftoneSize&quot;:0,&quot;twoInkPrint&quot;:0,&quot;twoInkPrintSize&quot;:0,&quot;ascii&quot;:0,&quot;asciiSize&quot;:0.06578947368421052,&quot;asciiInvert&quot;:0,&quot;asciiStyle&quot;:0,&quot;asciiColor&quot;:1,&quot;asciiRotation&quot;:0,&quot;dither&quot;:0,&quot;ditherSize&quot;:0,&quot;bloom&quot;:0,&quot;bloomRadius&quot;:8,&quot;monoScreen&quot;:0,&quot;monoScreenSize&quot;:0,&quot;monoScreenAngle&quot;:0,&quot;monoScreenSpread&quot;:0,&quot;monoScreenShape&quot;:0,&quot;monoScreenInvert&quot;:0,&quot;scanlines&quot;:0,&quot;scanlineCount&quot;:0,&quot;scanlineSoftness&quot;:0,&quot;chromaticAberration&quot;:0,&quot;chromaticAngle&quot;:0,&quot;crtCurvature&quot;:0,&quot;digitalGlitch&quot;:0,&quot;digitalGlitchColorSplit&quot;:0,&quot;digitalGlitchLineTear&quot;:0,&quot;digitalGlitchPixelate&quot;:0,&quot;digitalGlitchBlockAmount&quot;:0,&quot;digitalGlitchBlockDisplacement&quot;:0,&quot;digitalGlitchBlockOpacity&quot;:0,&quot;digitalGlitchSpeed&quot;:0,&quot;engraving&quot;:0,&quot;engravingSpacing&quot;:0.4117647058823529,&quot;engravingMinThickness&quot;:0.2,&quot;engravingMaxThickness&quot;:0.4571428571428572,&quot;engravingAngle&quot;:0.25,&quot;engravingContrast&quot;:0.4666666666666667,&quot;engravingSharpness&quot;:0.59,&quot;engravingWave&quot;:0.2,&quot;engravingWaveFrequency&quot;:0.2222222222222222,&quot;crosshatch&quot;:0,&quot;crosshatchSpacing&quot;:0.28,&quot;crosshatchThickness&quot;:0.25,&quot;crosshatchAngle&quot;:0.25,&quot;crosshatchContrast&quot;:0.3333333333333333,&quot;crosshatchEdges&quot;:0.5,&quot;crosshatchLineWeight&quot;:0,&quot;crosshatchWave&quot;:0.33,&quot;crosshatchWaveFrequency&quot;:0.2222222222222222,&quot;kuwahara&quot;:0,&quot;kuwaharaRadius&quot;:0.14285714285714285,&quot;kuwaharaSharpness&quot;:0.3125,&quot;kuwaharaSaturation&quot;:0.5},&quot;lut&quot;:null,&quot;colorSpace&quot;:&quot;rec709&quot;}" data-hf-id="hf-y83y" class="media clip" id="recorrido-video" src="assets/video/recorrido-4x5.mp4" muted playsinline data-start="0" data-duration="12.06" data-track-index="0"></video>
+          <video data-hf-id="hf-y83y" class="media clip" id="recorrido-video" src="assets/video/recorrido-4x5-graded.mp4" muted playsinline data-start="0" data-duration="12.06" data-track-index="0"></video>
         </div>
         <div data-hf-id="hf-r2cb" class="layer" id="recorrido-scrim"></div>
 
@@ -58,10 +58,8 @@
           const tl = gsap.timeline({ paused: true });
           // Llegada desde el vidrio: el interior aparece sobreexpuesto y desenfocado y se asienta
           tl.fromTo("#recorrido-wrap", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "sine.inOut" }, T.reveal.at);
-          tl.fromTo("#recorrido-video",
-            { "--hf-color-grading-exposure": 1.0, "--hf-color-grading-bloom": 1.5, "--hf-color-grading-blur": 0.5 },
-            { "--hf-color-grading-exposure": 0.12, "--hf-color-grading-bloom": 0, "--hf-color-grading-blur": 0,
-              duration: T.reveal.dur, ease: "power2.out" }, T.reveal.at);
+          tl.fromTo("#recorrido-wrap", { filter: "brightness(2.0) blur(14px)" },
+            { filter: "brightness(1) blur(0px)", duration: T.reveal.dur, ease: "power2.out", immediateRender: false }, T.reveal.at);
           tl.fromTo("#recorrido-wrap", { scale: 1.08 }, { scale: 1, duration: 1.4, ease: "power3.out", immediateRender: false }, T.reveal.at);
 
           enter(tl, "#recorrido-c1 .index", T.c1.at, 14);
@@ -76,8 +74,8 @@
 
 
           // Salida: desenfoque de foco hacia la toma del balcón
-          tl.fromTo("#recorrido-video", { "--hf-color-grading-blur": 0 },
-            { "--hf-color-grading-blur": 0.6, duration: T.exit.dur, ease: "sine.in", immediateRender: false }, T.exit.at);
+          tl.fromTo("#recorrido-wrap", { filter: "brightness(1) blur(0px)" },
+            { filter: "brightness(1) blur(14px)", duration: T.exit.dur, ease: "sine.in", immediateRender: false }, T.exit.at);
           window.__timelines["recorrido"] = tl;
         });
       </script>
