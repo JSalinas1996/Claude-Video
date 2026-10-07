@@ -7,7 +7,7 @@ destination: instagram-feed
 aspect: 1080x1350
 language: es
 audience: compradores e inversores de departamentos en La Plata
-length: 24s
+length: 26.6s
 angle: muestra de renders estilo desarrolladora — fachada, cruce del vidrio, recorrido interior, programa, contacto
 ---
 
@@ -25,6 +25,7 @@ y renders interiores se lean como una sola pieza.
 - assets/video/recorrido-4x5.mp4 — copia de trabajo derivada (NO versionada). Regenerar con:
   ffmpeg -i assets/video/recorrido.mp4 -vf "crop=1442:1802:(iw-1442)/2:0,scale=1080:1350:flags=lanczos,fps=30,format=yuv420p" -c:v libx264 -preset slow -crf 12 -an assets/video/recorrido-4x5.mp4
 - assets/images/cocina.jpg, assets/images/lavadero.jpg — renders interiores.
+- assets/images/balcon.jpg — render 9 (comedor con ventanal al balcón), toma "02 Balcón".
 - assets/images/logo-blanco.png — logo provisto por el usuario.
 
 ## Customizations
