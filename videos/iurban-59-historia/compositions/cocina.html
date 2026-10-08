@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <template id="cocina">
+      <style>
+        #cocina-root { position: absolute; inset: 0; overflow: hidden; }
+        #cocina-cam { transform-origin: 540px 900px; }
+        #cocina-img { object-position: 26% 50%; }
+        #cocina-g .index { margin-bottom: 18px; }
+      </style>
+      <div id="cocina-root" data-composition-id="cocina" data-width="1080" data-height="1920">
+        <div class="cam" id="cocina-cam" data-layout-allow-overflow>
+          <img class="media" id="cocina-img" src="assets/images/cocina.jpg" alt="" />
+        </div>
+        <div class="layer scrim-bottom"></div>
+        <div class="layer copy">
+          <div class="group" id="cocina-g">
+            <span class="index">03</span>
+            <span class="label">Cocina</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        // Tiempos locales (s). Slot: 20.0 → 22.8 global.
+        const T = { dur: 2.8, caption: 0.55, tail: 0.45 };
+        const IN = { dur: 0.9, ease: "power3.out", y: 24 };
+        const enter = (tl, sel, at, y = IN.y, dur = IN.dur) =>
+          tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: IN.ease }, at);
+        const leave = (tl, sel, at) =>
+          tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: 0.45, ease: "power2.in", immediateRender: false }, at);
+        const draw = (tl, sel, at, dur = 0.8) =>
+          tl.fromTo(sel, { scaleX: 0 }, { scaleX: 1, duration: dur, ease: "power2.inOut" }, at);
+        Promise.all([
+          document.fonts.load('400 110px "Instrument Serif"'),
+          document.fonts.load('400 38px "Hanken Grotesk"'),
+          document.fonts.load('500 26px "Hanken Grotesk"'),
+        ]).then(() => document.fonts.ready).then(() => {
+          const tl = gsap.timeline({ paused: true });
+          tl.fromTo("#cocina-root", { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "sine.inOut" }, 0);
+          tl.fromTo("#cocina-img", { filter: "blur(8px)" }, { filter: "blur(0px)", duration: 0.5, ease: "power2.out" }, 0);
+          // Avance: deriva hacia adelante y empuje final que entrega a la toma siguiente
+          tl.fromTo("#cocina-cam", { scale: 1.0 }, { scale: 1.07, duration: T.dur - T.tail, ease: "sine.inOut" }, 0);
+          tl.fromTo("#cocina-cam", { scale: 1.07 }, { scale: 1.16, duration: T.tail, ease: "power2.in", immediateRender: false }, T.dur - T.tail);
+          // Mirada que recorre el ambiente
+          tl.fromTo("#cocina-img", { objectPosition: "26% 50%" }, { objectPosition: "40% 50%", duration: T.dur, ease: "sine.inOut", immediateRender: false }, 0);
+          enter(tl, "#cocina-g .index", T.caption, 14);
+          enter(tl, "#cocina-g .label", T.caption + 0.12, 24);
+          window.__timelines["cocina"] = tl;
+        });
+      </script>
+    </template>
+  </body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <template id="balcon">
+      <style>
+        #balcon-root { position: absolute; inset: 0; overflow: hidden; }
+        #balcon-cam { transform-origin: 300px 1000px; }
+        #balcon-img { object-position: 50% 50%; }
+        #balcon-g .index { margin-bottom: 18px; }
+      </style>
+      <div id="balcon-root" data-composition-id="balcon" data-width="1080" data-height="1920">
+        <div class="cam" id="balcon-cam" data-layout-allow-overflow>
+          <img class="media" id="balcon-img" src="assets/images/balcon.jpg" alt="" />
+        </div>
+        <div class="layer scrim-bottom"></div>
+        <div class="layer copy">
+          <div class="group" id="balcon-g">
+            <span class="index">02</span>
+            <span class="label">Balcón</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        // Tiempos locales (s). Slot: 17.25 → 20.3 global.
+        const T = { dur: 3.05, caption: 0.55, tail: 0.45 };
+        const IN = { dur: 0.9, ease: "power3.out", y: 24 };
+        const enter = (tl, sel, at, y = IN.y, dur = IN.dur) =>
+          tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: IN.ease }, at);
+        const leave = (tl, sel, at) =>
+          tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: 0.45, ease: "power2.in", immediateRender: false }, at);
+        const draw = (tl, sel, at, dur = 0.8) =>
+          tl.fromTo(sel, { scaleX: 0 }, { scaleX: 1, duration: dur, ease: "power2.inOut" }, at);
+        Promise.all([
+          document.fonts.load('400 110px "Instrument Serif"'),
+          document.fonts.load('400 38px "Hanken Grotesk"'),
+          document.fonts.load('500 26px "Hanken Grotesk"'),
+        ]).then(() => document.fonts.ready).then(() => {
+          const tl = gsap.timeline({ paused: true });
+          // Mismo punto de vista que el último frame del recorrido: fundido directo, sin desenfoque
+          tl.fromTo("#balcon-root", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "sine.inOut" }, 0);
+          // Avance: deriva hacia adelante y empuje final que entrega a la toma siguiente
+          tl.fromTo("#balcon-cam", { scale: 1.0 }, { scale: 1.07, duration: T.dur - T.tail, ease: "sine.inOut" }, 0);
+          tl.fromTo("#balcon-cam", { scale: 1.07 }, { scale: 1.16, duration: T.tail, ease: "power2.in", immediateRender: false }, T.dur - T.tail);
+          // Mirada que recorre el ambiente
+          tl.fromTo("#balcon-img", { objectPosition: "50% 50%" }, { objectPosition: "24% 50%", duration: T.dur, ease: "sine.inOut", immediateRender: false }, 0);
+          enter(tl, "#balcon-g .index", T.caption, 14);
+          enter(tl, "#balcon-g .label", T.caption + 0.12, 24);
+          window.__timelines["balcon"] = tl;
+        });
+      </script>
+    </template>
+  </body>
+</html>

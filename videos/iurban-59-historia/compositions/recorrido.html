@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <template id="recorrido">
+      <style>
+        #recorrido-root { position: absolute; inset: 0; overflow: hidden; }
+        #recorrido-scrim { background: linear-gradient(to top, rgba(27,27,25,0.6) 0%, rgba(27,27,25,0.28) 22%, rgba(27,27,25,0) 40%); }
+        #recorrido-c1 .index { margin-bottom: 18px; }
+      </style>
+      <div id="recorrido-root" data-composition-id="recorrido" data-width="1080" data-height="1920">
+        <div class="layer" id="recorrido-wrap" data-layout-allow-overflow>
+          <video class="media clip" id="recorrido-video" src="assets/video/recorrido-9x16.mp4" muted playsinline
+            data-start="0" data-duration="12.06" data-track-index="0"></video>
+        </div>
+        <div class="layer" id="recorrido-scrim"></div>
+        <div class="layer copy">
+          <div class="group" id="recorrido-c1">
+            <span class="index">01</span>
+            <span class="label">Living comedor</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        // Tiempos locales (s). Slot: 5.75 → 17.85 global. Video 12.07 s a velocidad real,
+        // ya recortado a 9:16 y con el color igualado a los renders (assets/video/match_renders.cube).
+        const T = { reveal: { at: 0, dur: 0.95 }, c1: { at: 1.2, out: 5.2 } };
+        const IN = { dur: 0.9, ease: "power3.out", y: 24 };
+        const enter = (tl, sel, at, y = IN.y, dur = IN.dur) =>
+          tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: IN.ease }, at);
+        const leave = (tl, sel, at) =>
+          tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: 0.45, ease: "power2.in", immediateRender: false }, at);
+        const draw = (tl, sel, at, dur = 0.8) =>
+          tl.fromTo(sel, { scaleX: 0 }, { scaleX: 1, duration: dur, ease: "power2.inOut" }, at);
+        Promise.all([
+          document.fonts.load('400 110px "Instrument Serif"'),
+          document.fonts.load('400 38px "Hanken Grotesk"'),
+          document.fonts.load('500 26px "Hanken Grotesk"'),
+        ]).then(() => document.fonts.ready).then(() => {
+          const tl = gsap.timeline({ paused: true });
+          // Llegada desde el vidrio: sobreexpuesto y desenfocado, se asienta
+          tl.fromTo("#recorrido-wrap", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "sine.inOut" }, T.reveal.at);
+          tl.fromTo("#recorrido-wrap", { filter: "brightness(2.0) blur(14px)" },
+            { filter: "brightness(1) blur(0px)", duration: T.reveal.dur, ease: "power2.out", immediateRender: false }, T.reveal.at);
+          tl.fromTo("#recorrido-wrap", { scale: 1.08 }, { scale: 1, duration: 1.4, ease: "power3.out", immediateRender: false }, T.reveal.at);
+          enter(tl, "#recorrido-c1 .index", T.c1.at, 14);
+          enter(tl, "#recorrido-c1 .label", T.c1.at + 0.12, 24);
+          leave(tl, "#recorrido-c1", T.c1.out);
+          window.__timelines["recorrido"] = tl;
+        });
+      </script>
+    </template>
+  </body>
+</html>

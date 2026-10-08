@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <template id="dormitorio">
+      <style>
+        #dormitorio-root { position: absolute; inset: 0; overflow: hidden; }
+        #dormitorio-cam { transform-origin: 600px 900px; }
+        #dormitorio-img { object-position: 28% 50%; }
+        #dormitorio-g .index { margin-bottom: 18px; }
+      </style>
+      <div id="dormitorio-root" data-composition-id="dormitorio" data-width="1080" data-height="1920">
+        <div class="cam" id="dormitorio-cam" data-layout-allow-overflow>
+          <img class="media" id="dormitorio-img" src="assets/images/dormitorio.jpg" alt="" />
+        </div>
+        <div class="layer scrim-bottom"></div>
+        <div class="layer copy">
+          <div class="group" id="dormitorio-g">
+            <span class="index">05</span>
+            <span class="label">Dormitorio</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        // Tiempos locales (s). Slot: 24.7 → 27.8 global.
+        const T = { dur: 3.1, caption: 0.55, tail: 0.45 };
+        const IN = { dur: 0.9, ease: "power3.out", y: 24 };
+        const enter = (tl, sel, at, y = IN.y, dur = IN.dur) =>
+          tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: IN.ease }, at);
+        const leave = (tl, sel, at) =>
+          tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: 0.45, ease: "power2.in", immediateRender: false }, at);
+        const draw = (tl, sel, at, dur = 0.8) =>
+          tl.fromTo(sel, { scaleX: 0 }, { scaleX: 1, duration: dur, ease: "power2.inOut" }, at);
+        Promise.all([
+          document.fonts.load('400 110px "Instrument Serif"'),
+          document.fonts.load('400 38px "Hanken Grotesk"'),
+          document.fonts.load('500 26px "Hanken Grotesk"'),
+        ]).then(() => document.fonts.ready).then(() => {
+          const tl = gsap.timeline({ paused: true });
+          tl.fromTo("#dormitorio-root", { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "sine.inOut" }, 0);
+          tl.fromTo("#dormitorio-img", { filter: "blur(8px)" }, { filter: "blur(0px)", duration: 0.5, ease: "power2.out" }, 0);
+          // Avance: deriva hacia adelante y empuje final que entrega a la toma siguiente
+          tl.fromTo("#dormitorio-cam", { scale: 1.0 }, { scale: 1.07, duration: T.dur - T.tail, ease: "sine.inOut" }, 0);
+          tl.fromTo("#dormitorio-cam", { scale: 1.07 }, { scale: 1.16, duration: T.tail, ease: "power2.in", immediateRender: false }, T.dur - T.tail);
+          // Mirada que recorre el ambiente
+          tl.fromTo("#dormitorio-img", { objectPosition: "28% 50%" }, { objectPosition: "58% 50%", duration: T.dur, ease: "sine.inOut", immediateRender: false }, 0);
+          enter(tl, "#dormitorio-g .index", T.caption, 14);
+          enter(tl, "#dormitorio-g .label", T.caption + 0.12, 24);
+          window.__timelines["dormitorio"] = tl;
+        });
+      </script>
+    </template>
+  </body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template id="fachada">
+      <style>
+        #fachada-root { position: absolute; inset: 0; overflow: hidden; }
+        /* Origen = ventanal objetivo (balcón iluminado), en px del lienzo 1080x1350 */
+        #fachada-cam { transform-origin: 697px 1170px; }
+        #fachada-img { object-position: 50% 50%; }
+        #fachada-g .rule { margin: 26px 0 28px; }
+      </style>
+      <div id="fachada-root" data-composition-id="fachada" data-width="1080" data-height="1920">
+        <div class="cam" id="fachada-cam" data-layout-allow-overflow="">
+          <img class="media" id="fachada-img" src="assets/images/fachada.jpg" alt="">
+        </div>
+        <div class="layer scrim-bottom" id="fachada-scrim"></div>
+        <div class="layer copy">
+          <div class="group" id="fachada-g">
+            <span class="kicker" id="fachada-kicker">En construcción · La Plata</span>
+            <span class="rule" id="fachada-rule"></span>
+            <span class="display" id="fachada-title">59 e/ 9 y 10</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        // Tiempos locales = globales (slot 0 → 6.1).
+        const T = {
+          drift: { at: 0, dur: 3.2, to: 1.07 },
+          push: { at: 3.2, dur: 2.75, to: 3.4, x: -157, y: -210 },
+          glass: { at: 5.2, dur: 0.75 },
+          text: { kicker: 0.75, rule: 0.95, title: 1.05, out: 2.85 },
+        };
+        const IN = { dur: 0.9, ease: "power3.out", y: 24 };
+        const OUT = { dur: 0.45, ease: "power2.in" };
+        const enter = (tl, sel, at, y = IN.y, dur = IN.dur) =>
+          tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: IN.ease }, at);
+        const leave = (tl, sel, at) =>
+          tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: OUT.dur, ease: OUT.ease, immediateRender: false }, at);
+        const draw = (tl, sel, at, dur = 0.8) =>
+          tl.fromTo(sel, { scaleX: 0 }, { scaleX: 1, duration: dur, ease: "power2.inOut" }, at);
+        Promise.all([
+          document.fonts.load('400 92px "Instrument Serif"'),
+          document.fonts.load('italic 400 92px "Instrument Serif"'),
+          document.fonts.load('400 32px "Hanken Grotesk"'),
+          document.fonts.load('500 22px "Hanken Grotesk"'),
+        ]).then(() => document.fonts.ready).then(() => {
+          const tl = gsap.timeline({ paused: true });
+          // Cámara: deriva lenta y luego empuje que acelera hacia el ventanal
+          tl.fromTo("#fachada-cam", { scale: 1, x: 0, y: 0 }, { scale: T.drift.to, duration: T.drift.dur, ease: "sine.inOut" }, T.drift.at);
+          tl.fromTo("#fachada-cam", { scale: T.drift.to, x: 0, y: 0 },
+            { scale: T.push.to, x: T.push.x, y: T.push.y, duration: T.push.dur, ease: "power3.in", immediateRender: false }, T.push.at);
+          // Cruce del vidrio: sobreexposición + desenfoque
+          // (Corrección de color horneada en el asset; el cruce usa filtros CSS: este entorno no tiene GPU.)
+          tl.fromTo("#fachada-img", { filter: "brightness(1) blur(0px)" },
+            { filter: "brightness(2.3) blur(16px)", duration: T.glass.dur, ease: "power2.in" }, T.glass.at);
+          // Texto
+          enter(tl, "#fachada-kicker", T.text.kicker, 16);
+          draw(tl, "#fachada-rule", T.text.rule);
+          enter(tl, "#fachada-title", T.text.title, 30, 1.0);
+          leave(tl, "#fachada-g", T.text.out);
+          leave(tl, "#fachada-scrim", T.text.out + 0.2);
+          window.__timelines["fachada"] = tl;
+        });
+      </script>
+    </template>
+  </body>
+</html>
