@@ -8,7 +8,7 @@
 
 const TZ = 'America/Argentina/Buenos_Aires';
 const HOJA = 'Movimientos';
-const VERSION = 'v7';
+const VERSION = 'v8';
 const COLUMNAS = ['ID', 'Fecha', 'Mes', 'Tipo', 'Descripción', 'Monto', 'Categoría', 'Clase',
   'Subcategoría', 'Medio', 'Cuota', 'Origen', 'Creado', 'USD'];
 const COL = Object.fromEntries(COLUMNAS.map((c, i) => [c, i]));
@@ -96,7 +96,7 @@ function doPost(e) {
       return json_({ ok: true, resultado: acciones[body.action](body) });
     }
     if (body.texto) Object.assign(body, separarTexto_(body.texto));
-    const r = agregar_(body, 'atajo');
+    const r = agregar_(camposAtajo_(body), 'atajo');
     const mensaje = `✓ ${r.categoria} · $${formato_(r.monto)}`;
     // Sin "action" es el atajo del iPhone: responde texto corto para mostrarlo como aviso.
     return texto_(mensaje);
@@ -104,6 +104,18 @@ function doPost(e) {
     const error = String(err.message || err);
     return body.action ? json_({ ok: false, error }) : texto_('✗ No se guardó: ' + error);
   }
+}
+
+/**
+ * El atajo del iPhone puede mandar las claves con mayúscula ("Monto") y con las respuestas cruzadas:
+ * el monto es la que se puede leer como número; la otra, la descripción.
+ */
+function camposAtajo_(body) {
+  const c = {};
+  Object.keys(body).forEach(k => { c[k.toLowerCase()] = body[k]; });
+  let monto = c.monto, descripcion = c.descripcion;
+  if (!numero_(monto) && numero_(descripcion)) [monto, descripcion] = [descripcion, monto];
+  return Object.assign(c, { monto, descripcion });
 }
 
 /** El atajo manda una sola respuesta, "1500 kiosco" o "kiosco 1.500": el primer número es el monto, el resto la descripción. */
