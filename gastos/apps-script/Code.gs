@@ -81,8 +81,9 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  let body = {};
   try {
-    const body = JSON.parse(e.postData.contents);
+    body = JSON.parse(e.postData.contents);
     if (!tokenValido_(body.k)) return json_({ ok: false, error: 'token' });
     const acciones = {
       guardar: b => agregar_(b.datos, 'panel'),
@@ -96,9 +97,12 @@ function doPost(e) {
     }
     if (body.texto) Object.assign(body, separarTexto_(body.texto));
     const r = agregar_(body, 'atajo');
-    return json_({ ok: true, id: r.id, mensaje: `✓ ${r.categoria} · $${formato_(r.monto)}` });
+    const mensaje = `✓ ${r.categoria} · $${formato_(r.monto)}`;
+    // El atajo de una sola respuesta muestra el texto tal cual; el resto de los clientes espera JSON.
+    return body.texto ? texto_(mensaje) : json_({ ok: true, id: r.id, mensaje });
   } catch (err) {
-    return json_({ ok: false, error: String(err.message || err) });
+    const error = String(err.message || err);
+    return body.texto ? texto_('✗ No se guardó: ' + error + '. Escribí monto y descripción, ej: 1500 kiosco') : json_({ ok: false, error });
   }
 }
 
@@ -350,6 +354,10 @@ function filaDeId_(sh, id) {
 
 function hoja_() {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA);
+}
+
+function texto_(t) {
+  return ContentService.createTextOutput(t).setMimeType(ContentService.MimeType.TEXT);
 }
 
 function json_(obj) {
