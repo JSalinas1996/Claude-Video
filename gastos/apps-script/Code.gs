@@ -8,7 +8,7 @@
 
 const TZ = 'America/Argentina/Buenos_Aires';
 const HOJA = 'Movimientos';
-const VERSION = 'v6';
+const VERSION = 'v7';
 const COLUMNAS = ['ID', 'Fecha', 'Mes', 'Tipo', 'Descripción', 'Monto', 'Categoría', 'Clase',
   'Subcategoría', 'Medio', 'Cuota', 'Origen', 'Creado', 'USD'];
 const COL = Object.fromEntries(COLUMNAS.map((c, i) => [c, i]));
@@ -94,11 +94,20 @@ function doPost(e) {
       if (!acciones[body.action]) return json_({ ok: false, error: 'acción desconocida' });
       return json_({ ok: true, resultado: acciones[body.action](body) });
     }
+    if (body.texto) Object.assign(body, separarTexto_(body.texto));
     const r = agregar_(body, 'atajo');
-    return json_({ ok: true, id: r.id, mensaje: `${r.categoria} · $${formato_(r.monto)}` });
+    return json_({ ok: true, id: r.id, mensaje: `✓ ${r.categoria} · $${formato_(r.monto)}` });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
   }
+}
+
+/** El atajo manda una sola respuesta, "1500 kiosco" o "kiosco 1.500": el primer número es el monto, el resto la descripción. */
+function separarTexto_(texto) {
+  const t = String(texto).trim();
+  const m = t.match(/\$?\s*(\d[\d.,]*)/);
+  if (!m) return { monto: '', descripcion: t };
+  return { monto: m[1], descripcion: (t.slice(0, m.index) + ' ' + t.slice(m.index + m[0].length)).replace(/\s+/g, ' ').trim() };
 }
 
 /* ---------- llamadas desde el panel (google.script.run) ---------- */
