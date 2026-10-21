@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f4f2;
+    --surface: #fcfcfb;
+    --line: #e4e3df;
+    --text: #0b0b0b;
+    --text-2: #52514e;
+    --muted: #8a8984;
+    --accent: #2a78d6;
+    --accent-soft: #c9dcf4;
+    --pos: #1f7a3a;
+    --neg: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #111110;
+      --surface: #1a1a19;
+      --line: #2c2c2a;
+      --text: #f0efec;
+      --text-2: #c3c2b7;
+      --muted: #8d8c86;
+      --accent: #3987e5;
+      --accent-soft: #23405f;
+      --pos: #5cc27a;
+      --neg: #ef6b62;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 16px 16px 96px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+  h1 { font-size: 22px; margin: 0; }
+  h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); margin: 0 0 12px; }
+  .mes-nav { display: flex; align-items: center; gap: 4px; }
+  .mes-nav span { min-width: 112px; text-align: center; font-weight: 600; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .icon-btn { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; width: 36px; height: 36px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .tile .lbl { font-size: 12px; color: var(--text-2); }
+  .tile .val { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .tile .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .pos { color: var(--pos); } .neg { color: var(--neg); }
+
+  /* barras horizontales */
+  .hbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center;
+          padding: 6px 4px; border-radius: 8px; cursor: pointer; }
+  .hbar:hover, .hbar.sel { background: var(--bg); }
+  .hbar .name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hbar .amt { font-size: 14px; font-variant-numeric: tabular-nums; color: var(--text); text-align: right; }
+  .hbar .amt small { color: var(--muted); margin-left: 6px; }
+  .hbar .track { grid-column: 1 / -1; height: 8px; }
+  .hbar .fill { height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; min-width: 2px; }
+
+  /* columnas mensuales */
+  .cols { position: relative; display: flex; align-items: flex-end; gap: 2px; height: 140px; border-bottom: 1px solid var(--line); }
+  .col { flex: 1; height: 100%; display: flex; align-items: flex-end; cursor: pointer; }
+  .col div { width: 100%; background: var(--accent-soft); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .col.sel div, .col:hover div { background: var(--accent); }
+  .cols-x { display: flex; gap: 2px; margin-top: 6px; }
+  .cols-x span { flex: 1; text-align: center; font-size: 11px; color: var(--muted); text-transform: capitalize; }
+  .tip { position: absolute; pointer-events: none; background: var(--text); color: var(--surface); font-size: 12px;
+         padding: 4px 8px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -100%); display: none; }
+
+  /* lista */
+  .filtro { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); margin-bottom: 8px; }
+  .filtro button { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+  .mov { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 2px 10px; padding: 10px 0; border-top: 1px solid var(--line); align-items: center; }
+  .mov:first-of-type { border-top: 0; }
+  .mov .d { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mov .m { font-size: 12px; color: var(--muted); grid-column: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mov .a { font-variant-numeric: tabular-nums; text-align: right; grid-row: 1 / 3; grid-column: 2; }
+  .mov .x { grid-row: 1 / 3; grid-column: 3; background: none; border: 0; color: var(--muted); width: 28px; height: 28px; border-radius: 8px; }
+  .mov .x:hover { background: var(--bg); color: var(--neg); }
+  .mas { display: block; width: 100%; margin-top: 8px; background: none; border: 1px solid var(--line); border-radius: 10px; padding: 8px; color: var(--text-2); }
+  .vacio { color: var(--muted); font-size: 14px; padding: 8px 0; }
+
+  /* alta */
+  .fab { position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); width: 56px; height: 56px;
+         border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 28px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+  dialog { border: 0; border-radius: 16px; padding: 0; width: min(440px, calc(100% - 32px)); background: var(--surface); color: var(--text); }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  form { padding: 20px; display: grid; gap: 12px; }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--text-2); }
+  input, select { font: inherit; font-size: 16px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; width: 100%; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .acciones { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn { border-radius: 10px; padding: 10px 16px; border: 1px solid var(--line); background: var(--surface); }
+  .btn.prim { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #estado { text-align: center; color: var(--muted); padding: 40px 0; }
+  @media (min-width: 620px) { .tiles { grid-template-columns: repeat(4, 1fr); } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Gastos</h1>
+    <div class="mes-nav">
+      <button class="icon-btn" id="prev" aria-label="Mes anterior">‹</button>
+      <span id="mesLbl">—</span>
+      <button class="icon-btn" id="next" aria-label="Mes siguiente">›</button>
+    </div>
+  </header>
+
+  <div id="estado">Cargando…</div>
+  <div id="app" hidden>
+    <section class="tiles">
+      <div class="tile"><div class="lbl">Gastado</div><div class="val" id="tGasto"></div><div class="sub" id="tGastoSub"></div></div>
+      <div class="tile"><div class="lbl">Ingresos</div><div class="val" id="tIng"></div></div>
+      <div class="tile"><div class="lbl">Saldo</div><div class="val" id="tSaldo"></div></div>
+      <div class="tile"><div class="lbl">Fijo / variable</div><div class="val" id="tFijo"></div><div class="sub">% del gasto que es fijo</div></div>
+    </section>
+
+    <section class="card">
+      <h2>Por categoría</h2>
+      <div id="cats"></div>
+    </section>
+
+    <section class="card">
+      <h2>Por medio de pago</h2>
+      <div id="medios"></div>
+    </section>
+
+    <section class="card">
+      <h2>Gasto por mes</h2>
+      <div class="cols" id="cols"><div class="tip" id="tip"></div></div>
+      <div class="cols-x" id="colsX"></div>
+    </section>
+
+    <section class="card">
+      <h2>Movimientos</h2>
+      <div class="filtro" id="filtro"><span id="filtroTxt"></span><button id="quitarFiltro">Quitar filtro</button></div>
+      <div id="lista"></div>
+    </section>
+  </div>
+</main>
+
+<button class="fab" id="fab" aria-label="Agregar gasto">+</button>
+
+<dialog id="dlg">
+  <form id="frm" method="dialog">
+    <label>Monto<input name="monto" inputmode="decimal" required placeholder="0"></label>
+    <label>Descripción<input name="descripcion" required placeholder="Ej: Kiosco"></label>
+    <div class="row2">
+      <label>Categoría<select name="categoria" id="selCat"><option value="">Automática</option></select></label>
+      <label>Medio<select name="medio" id="selMedio"></select></label>
+    </div>
+    <div class="row2">
+      <label>Fecha<input type="date" name="fecha" id="inFecha"></label>
+      <label>Tipo<select name="tipo"><option>Gasto</option><option>Ingreso</option></select></label>
+    </div>
+    <div class="acciones">
+      <button type="button" class="btn" id="cancelar">Cancelar</button>
+      <button type="submit" class="btn prim" id="guardar">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const K = '<?= k ?>';
+const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+const fmtMes = m => { const t = new Date(m + '-15').toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }); return t[0].toUpperCase() + t.slice(1); };
+const fmtMesCorto = m => new Date(m + '-15').toLocaleDateString('es-AR', { month: 'short' }).replace('.', '');
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+let D = { filas: [], categorias: [], medios: [] };
+let meses = [], mesSel = null, filtro = null, verTodos = false;
+
+function cargar() {
+  google.script.run
+    .withSuccessHandler(r => { D = r; armarFormulario(); procesar(); })
+    .withFailureHandler(e => { $('estado').textContent = 'Error: ' + e.message; })
+    .getDatos(K);
+}
+
+function procesar() {
+  meses = [...new Set(D.filas.map(f => f.mes).filter(Boolean))].sort();
+  const hoy = new Date().toISOString().slice(0, 7);
+  if (!meses.includes(hoy)) meses.push(hoy), meses.sort();
+  if (!mesSel || !meses.includes(mesSel)) mesSel = meses[meses.length - 1];
+  $('estado').hidden = true;
+  $('app').hidden = false;
+  render();
+}
+
+const gastosDe = m => D.filas.filter(f => f.mes === m && f.tipo !== 'Ingreso');
+const total = arr => arr.reduce((s, f) => s + f.monto, 0);
+
+function render() {
+  const i = meses.indexOf(mesSel);
+  $('mesLbl').textContent = fmtMes(mesSel);
+  $('prev').disabled = i <= 0;
+  $('next').disabled = i >= meses.length - 1;
+
+  const gastos = gastosDe(mesSel);
+  const ingresos = D.filas.filter(f => f.mes === mesSel && f.tipo === 'Ingreso');
+  const g = total(gastos), ing = total(ingresos), saldo = ing - g;
+  $('tGasto').textContent = fmt.format(g);
+  $('tIng').textContent = fmt.format(ing);
+  $('tSaldo').textContent = fmt.format(saldo);
+  $('tSaldo').className = 'val ' + (saldo >= 0 ? 'pos' : 'neg');
+  const fijo = total(gastos.filter(f => f.clase === 'Fijo'));
+  $('tFijo').textContent = g ? Math.round(fijo / g * 100) + '%' : '—';
+
+  const prev = i > 0 ? total(gastosDe(meses[i - 1])) : 0;
+  if (prev) {
+    const d = (g - prev) / prev * 100;
+    $('tGastoSub').innerHTML = `<span class="${d > 0 ? 'neg' : 'pos'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d).toFixed(0)}%</span> vs ${fmtMesCorto(meses[i - 1])}`;
+  } else $('tGastoSub').textContent = '';
+
+  barras('cats', agrupar(gastos, 'categoria'), g, 'categoria');
+  barras('medios', agrupar(gastos, 'medio'), g, 'medio');
+  columnas();
+  lista(gastos.concat(ingresos));
+}
+
+function agrupar(arr, campo) {
+  const m = {};
+  arr.forEach(f => { const k = f[campo] || 'Sin dato'; m[k] = (m[k] || 0) + f.monto; });
+  return Object.entries(m).sort((a, b) => b[1] - a[1]);
+}
+
+function barras(id, pares, tot, campo) {
+  const max = Math.max(...pares.map(p => p[1]), 1);
+  $(id).innerHTML = pares.length ? pares.map(([k, v]) => `
+    <div class="hbar ${filtro && filtro.campo === campo && filtro.valor === k ? 'sel' : ''}" data-campo="${campo}" data-valor="${esc(k)}">
+      <div class="name">${esc(k)}</div>
+      <div class="amt">${fmt.format(v)}<small>${tot ? Math.round(v / tot * 100) : 0}%</small></div>
+      <div class="track"><div class="fill" style="width:${Math.max(v, 0) / max * 100}%"></div></div>
+    </div>`).join('') : '<div class="vacio">Sin gastos este mes.</div>';
+}
+
+function columnas() {
+  const ult = meses.slice(-12);
+  const vals = ult.map(m => total(gastosDe(m)));
+  const max = Math.max(...vals, 1);
+  const cols = $('cols');
+  cols.querySelectorAll('.col').forEach(n => n.remove());
+  ult.forEach((m, j) => {
+    const c = document.createElement('div');
+    c.className = 'col' + (m === mesSel ? ' sel' : '');
+    c.innerHTML = `<div style="height:${Math.max(vals[j], 0) / max * 100}%"></div>`;
+    c.onmouseenter = () => mostrarTip(c, `${fmtMes(m)}: ${fmt.format(vals[j])}`);
+    c.onmouseleave = () => { $('tip').style.display = 'none'; };
+    c.onclick = () => { mesSel = m; filtro = null; render(); };
+    cols.appendChild(c);
+  });
+  $('colsX').innerHTML = ult.map(m => `<span>${fmtMesCorto(m)}</span>`).join('');
+}
+
+function mostrarTip(col, texto) {
+  const tip = $('tip'), barra = col.firstChild;
+  tip.textContent = texto;
+  tip.style.display = 'block';
+  tip.style.left = (col.offsetLeft + col.offsetWidth / 2) + 'px';
+  tip.style.top = (barra.offsetTop - 6) + 'px';
+  const r = tip.getBoundingClientRect(), p = $('cols').getBoundingClientRect();
+  if (r.left < p.left) tip.style.left = (parseFloat(tip.style.left) + p.left - r.left) + 'px';
+  if (r.right > p.right) tip.style.left = (parseFloat(tip.style.left) - (r.right - p.right)) + 'px';
+}
+
+function lista(arr) {
+  let filas = arr.slice();
+  if (filtro) filas = filas.filter(f => (f[filtro.campo] || 'Sin dato') === filtro.valor);
+  filas.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  $('filtro').style.display = filtro ? 'flex' : 'none';
+  if (filtro) $('filtroTxt').textContent = `${filtro.valor} · ${fmt.format(total(filas))}`;
+  const visibles = verTodos ? filas : filas.slice(0, 30);
+  $('lista').innerHTML = visibles.length ? visibles.map(f => `
+    <div class="mov">
+      <div class="d">${esc(f.descripcion)}</div>
+      <div class="m">${f.fecha.slice(8, 10)}/${f.fecha.slice(5, 7)} · ${esc(f.categoria)}${f.subcategoria ? ' · ' + esc(f.subcategoria) : ''} ${f.medio ? ' · ' + esc(f.medio) : ''}${f.cuota ? ' · ' + esc(f.cuota) : ''}</div>
+      <div class="a ${f.tipo === 'Ingreso' ? 'pos' : ''}">${f.tipo === 'Ingreso' ? '+' : ''}${fmt.format(f.monto)}</div>
+      <button class="x" data-id="${esc(f.id)}" aria-label="Borrar">×</button>
+    </div>`).join('') + (filas.length > visibles.length ? `<button class="mas" id="verMas">Ver ${filas.length - visibles.length} más</button>` : '')
+    : '<div class="vacio">No hay movimientos.</div>';
+}
+
+function armarFormulario() {
+  $('selCat').innerHTML = '<option value="">Automática</option>' + D.categorias.map(c => `<option>${esc(c)}</option>`).join('');
+  $('selMedio').innerHTML = D.medios.map(m => `<option>${esc(m)}</option>`).join('');
+}
+
+/* eventos */
+$('prev').onclick = () => { mesSel = meses[meses.indexOf(mesSel) - 1]; filtro = null; verTodos = false; render(); };
+$('next').onclick = () => { mesSel = meses[meses.indexOf(mesSel) + 1]; filtro = null; verTodos = false; render(); };
+$('quitarFiltro').onclick = () => { filtro = null; render(); };
+
+document.addEventListener('click', e => {
+  const bar = e.target.closest('.hbar');
+  if (bar) {
+    const nuevo = { campo: bar.dataset.campo, valor: bar.dataset.valor };
+    filtro = filtro && filtro.campo === nuevo.campo && filtro.valor === nuevo.valor ? null : nuevo;
+    render();
+    if (filtro) $('lista').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if (e.target.id === 'verMas') { verTodos = true; render(); return; }
+  const x = e.target.closest('.x');
+  if (x && confirm('¿Borrar este movimiento?')) {
+    const id = x.dataset.id;
+    D.filas = D.filas.filter(f => f.id !== id);
+    render();
+    google.script.run.withFailureHandler(err => { alert('No se pudo borrar: ' + err.message); cargar(); }).borrar(K, id);
+  }
+});
+
+$('fab').onclick = () => {
+  $('frm').reset();
+  $('inFecha').value = new Date().toLocaleDateString('en-CA');
+  $('dlg').showModal();
+};
+$('cancelar').onclick = () => $('dlg').close();
+$('frm').onsubmit = e => {
+  e.preventDefault();
+  const datos = Object.fromEntries(new FormData($('frm')));
+  $('guardar').disabled = true;
+  google.script.run
+    .withSuccessHandler(() => { $('guardar').disabled = false; $('dlg').close(); mesSel = datos.fecha.slice(0, 7); cargar(); })
+    .withFailureHandler(err => { $('guardar').disabled = false; alert(err.message); })
+    .guardar(K, datos);
+};
+
+cargar();
+</script>
+</body>
+</html>
