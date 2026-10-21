@@ -152,7 +152,7 @@
   .fab svg { width: 24px; height: 24px; }
 
   /* editor */
-  dialog { border: 0; padding: 0; background: var(--surface); color: var(--text); width: 100%; max-width: 520px; max-height: 92vh;
+  dialog { border: 0; padding: 0; background: var(--surface); color: var(--text); width: 100%; max-width: 520px; max-height: calc(100dvh - 12px); overflow-y: auto;
            margin: auto auto 0; border-radius: 20px 20px 0 0; }
   @media (min-width: 620px) { dialog { margin: auto; border-radius: 20px; } }
   dialog::backdrop { background: rgba(0,0,0,.5); }
@@ -236,6 +236,7 @@
       <div class="kpi"><div class="l">Ahorro</div><div class="v num" id="kAho"></div><div class="s" id="kAhoS"></div></div>
       <div class="kpi"><div class="l">Resultado del mes</div><div class="v num" id="kDisp"></div><div class="s" id="kDispS"></div></div>
     </div>
+    <button class="mas" id="irResumen" style="margin:0 0 12px">📄 Cargar resumen de tarjeta</button>
     <div class="card">
       <h2>Ingresos y consumo <small>tocá un mes</small></h2>
       <div class="leyenda"><span><i class="dot" style="background:var(--s1)"></i>Ingresos</span><span><i class="dot" style="background:var(--s2)"></i>Consumo</span></div>
@@ -707,6 +708,7 @@ $('menu').addEventListener('click', e => {
 });
 $('kSaldoBtn').onclick = () => abrirEditor(null, 'Saldo');
 $('aUsdBtn').onclick = () => abrirEditor(null, 'SaldoUSD');
+$('irResumen').onclick = () => irA('importar');
 $('cerrar').onclick = () => $('dlg').close();
 $('dlg').addEventListener('click', e => { if (e.target === $('dlg')) $('dlg').close(); });
 document.querySelectorAll('#segTipo button, #segClase button').forEach(b => b.onclick = () => {
