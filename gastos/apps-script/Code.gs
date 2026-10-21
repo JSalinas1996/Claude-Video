@@ -98,11 +98,11 @@ function doPost(e) {
     if (body.texto) Object.assign(body, separarTexto_(body.texto));
     const r = agregar_(body, 'atajo');
     const mensaje = `✓ ${r.categoria} · $${formato_(r.monto)}`;
-    // El atajo de una sola respuesta muestra el texto tal cual; el resto de los clientes espera JSON.
-    return body.texto ? texto_(mensaje) : json_({ ok: true, id: r.id, mensaje });
+    // Sin "action" es el atajo del iPhone: responde texto corto para mostrarlo como aviso.
+    return texto_(mensaje);
   } catch (err) {
     const error = String(err.message || err);
-    return body.texto ? texto_('✗ No se guardó: ' + error + '. Escribí monto y descripción, ej: 1500 kiosco') : json_({ ok: false, error });
+    return body.action ? json_({ ok: false, error }) : texto_('✗ No se guardó: ' + error);
   }
 }
 
