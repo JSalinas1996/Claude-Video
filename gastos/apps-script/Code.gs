@@ -1,14 +1,14 @@
 /**
  * Gastos — web app de Apps Script.
- *  doGet  → panel (Index.html) o configuración para el atajo (?action=config)
- *  doPost → alta de un gasto desde el atajo de iPhone
+ *  doGet  → panel (Index.html), configuración (?action=config) o datos para la app web (?action=datos)
+ *  doPost → alta de un gasto (atajo) o acciones de la app web: {action: guardar|editar|borrar|lote}
  *  importarMails → carga los pagos de Mercado Pago que llegan por mail (trigger cada 15 min)
  * Todo pide el token guardado en Propiedades del script (lo genera setup()).
  */
 
 const TZ = 'America/Argentina/Buenos_Aires';
 const HOJA = 'Movimientos';
-const VERSION = 'v5';
+const VERSION = 'v6';
 const COLUMNAS = ['ID', 'Fecha', 'Mes', 'Tipo', 'Descripción', 'Monto', 'Categoría', 'Clase',
   'Subcategoría', 'Medio', 'Cuota', 'Origen', 'Creado', 'USD'];
 const COL = Object.fromEntries(COLUMNAS.map((c, i) => [c, i]));
@@ -69,6 +69,7 @@ function doGet(e) {
   if (!tokenValido_(p.k)) return HtmlService.createHtmlOutput('Acceso denegado');
   if (p.action === 'config') return json_({ categorias: CATEGORIAS, medios: MEDIOS });
   if (p.action === 'version') return json_({ version: VERSION });
+  if (p.action === 'datos') return json_(Object.assign({ ok: true }, getDatos(p.k)));
 
   const t = HtmlService.createTemplateFromFile('Index');
   t.k = p.k;
@@ -83,6 +84,16 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     if (!tokenValido_(body.k)) return json_({ ok: false, error: 'token' });
+    const acciones = {
+      guardar: b => agregar_(b.datos, 'panel'),
+      editar: b => editar(b.k, b.id, b.datos),
+      borrar: b => borrar(b.k, b.id),
+      lote: b => guardarLote(b.k, b.filas, b.pago),
+    };
+    if (body.action) {
+      if (!acciones[body.action]) return json_({ ok: false, error: 'acción desconocida' });
+      return json_({ ok: true, resultado: acciones[body.action](body) });
+    }
     const r = agregar_(body, 'atajo');
     return json_({ ok: true, id: r.id, mensaje: `${r.categoria} · $${formato_(r.monto)}` });
   } catch (err) {
