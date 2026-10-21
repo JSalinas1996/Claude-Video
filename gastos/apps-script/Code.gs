@@ -8,7 +8,7 @@
 
 const TZ = 'America/Argentina/Buenos_Aires';
 const HOJA = 'Movimientos';
-const VERSION = 'v4';
+const VERSION = 'v5';
 const COLUMNAS = ['ID', 'Fecha', 'Mes', 'Tipo', 'Descripción', 'Monto', 'Categoría', 'Clase',
   'Subcategoría', 'Medio', 'Cuota', 'Origen', 'Creado', 'USD'];
 const COL = Object.fromEntries(COLUMNAS.map((c, i) => [c, i]));
@@ -72,6 +72,7 @@ function doGet(e) {
 
   const t = HtmlService.createTemplateFromFile('Index');
   t.k = p.k;
+  t.nuevo = ['Gasto', 'Ingreso', 'Ahorro', 'Saldo', 'Resumen'].includes(p.nuevo) ? p.nuevo : '';
   return t.evaluate()
     .setTitle('Gastos')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')

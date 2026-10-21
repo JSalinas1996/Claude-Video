@@ -360,6 +360,7 @@
 
 <script>
 const K = '<?= k ?>';
+const NUEVO = '<?= nuevo ?>';  // ?nuevo=Gasto abre directo el alta (lo usa el atajo del iPhone)
 const CAT_AHORRO = '💰 Ahorro USD';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -396,6 +397,8 @@ function preparar() {
   $('cargando').hidden = true;
   armarListasEditor();
   render();
+  if (NUEVO && !preparar.hecho) NUEVO === 'Resumen' ? irA('importar') : abrirEditor(null, NUEVO);
+  preparar.hecho = true;
 }
 
 const delMes = m => D.filas.filter(f => f.mes === m);
