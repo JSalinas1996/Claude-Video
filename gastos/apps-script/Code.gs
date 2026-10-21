@@ -8,14 +8,18 @@
 
 const TZ = 'America/Argentina/Buenos_Aires';
 const HOJA = 'Movimientos';
+const VERSION = 'v3';
 const COLUMNAS = ['ID', 'Fecha', 'Mes', 'Tipo', 'Descripción', 'Monto', 'Categoría', 'Clase',
-  'Subcategoría', 'Medio', 'Cuota', 'Origen', 'Creado'];
+  'Subcategoría', 'Medio', 'Cuota', 'Origen', 'Creado', 'USD'];
 const COL = Object.fromEntries(COLUMNAS.map((c, i) => [c, i]));
 
 const CATEGORIAS = ['🛒 Supermercado', '🍽 Comida/Delivery', '🚗 Transporte', '🏠 Hogar',
   '⚽ Entretenimiento', '👕 Ropa/Compras', '🛡 Seguros', '💳 Impuestos/Financiero',
   '💰 Ahorro USD', '❓ Otros'];
-const MEDIOS = ['Dinero MP', 'Tarjeta de crédito', 'Crédito MP', 'Transferencia banco', 'Efectivo'];
+const CAT_INGRESO = '💵 Ingreso';
+const CAT_AHORRO = '💰 Ahorro USD';
+const CAT_SALDO = '🏦 Saldo';  // Tipo "Saldo": foto del saldo real de todas las cuentas; no suma en gastos ni ingresos.
+const MEDIOS = ['Dinero MP', 'Tarjeta de crédito', 'Crédito MP', 'Transferencia banco', 'Efectivo', 'Fijo mensual'];
 
 // Palabra clave en la descripción → [categoría, subcategoría]. Se usa si no hay un gasto previo igual.
 const REGLAS = [
@@ -38,6 +42,7 @@ function setup() {
   let sh = ss.getSheetByName(HOJA);
   if (!sh) sh = ss.insertSheet(HOJA);
   if (sh.getLastRow() === 0) sh.appendRow(COLUMNAS);
+  asegurarEncabezado_(sh);
   sh.setFrozenRows(1);
   sh.getRange('F:F').setNumberFormat('#,##0.00');
 
@@ -58,6 +63,7 @@ function doGet(e) {
   const p = e.parameter || {};
   if (!tokenValido_(p.k)) return HtmlService.createHtmlOutput('Acceso denegado');
   if (p.action === 'config') return json_({ categorias: CATEGORIAS, medios: MEDIOS });
+  if (p.action === 'version') return json_({ version: VERSION });
 
   const t = HtmlService.createTemplateFromFile('Index');
   t.k = p.k;
@@ -83,6 +89,7 @@ function doPost(e) {
 function getDatos(k) {
   if (!tokenValido_(k)) throw new Error('Acceso denegado');
   const sh = hoja_();
+  asegurarEncabezado_(sh);
   if (sh.getLastRow() < 2) return { filas: [], categorias: CATEGORIAS, medios: MEDIOS };
   const tzHoja = sh.getParent().getSpreadsheetTimeZone();
   const filas = sh.getRange(2, 1, sh.getLastRow() - 1, COLUMNAS.length).getValues()
@@ -102,6 +109,8 @@ function getDatos(k) {
         medio: r[COL.Medio],
         cuota: r[COL.Cuota],
         origen: r[COL.Origen],
+        usd: Number(r[COL.USD]) || 0,
+        creado: r[COL.Creado] instanceof Date ? Utilities.formatDate(r[COL.Creado], tzHoja, 'yyyy-MM-dd HH:mm') : String(r[COL.Creado]),
       };
     });
   return { filas, categorias: CATEGORIAS, medios: MEDIOS };
@@ -112,16 +121,32 @@ function guardar(k, datos) {
   return agregar_(datos, 'panel');
 }
 
+function editar(k, id, datos) {
+  if (!tokenValido_(k)) throw new Error('Acceso denegado');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sh = hoja_();
+    const fila = filaDeId_(sh, id);
+    if (!fila) throw new Error('No encontré el movimiento');
+    const actual = sh.getRange(fila, 1, 1, COLUMNAS.length).getValues()[0];
+    const nueva = armarFila_(Object.assign({}, datos, { id }), actual[COL.Origen], actual[COL.Creado]);
+    sh.getRange(fila, 1, 1, COLUMNAS.length).setValues([nueva]);
+    return true;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function borrar(k, id) {
   if (!tokenValido_(k)) throw new Error('Acceso denegado');
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
     const sh = hoja_();
-    const ids = sh.getRange(2, 1, Math.max(sh.getLastRow() - 1, 1), 1).getValues();
-    const i = ids.findIndex(r => String(r[0]) === String(id));
-    if (i < 0) return false;
-    sh.deleteRow(i + 2);
+    const fila = filaDeId_(sh, id);
+    if (!fila) return false;
+    sh.deleteRow(fila);
     return true;
   } finally {
     lock.releaseLock();
@@ -166,29 +191,40 @@ function parsearMail_(asunto, cuerpo) {
 /* ---------- núcleo ---------- */
 
 function agregar_(d, origen) {
-  const monto = numero_(d.monto);
-  if (!monto) throw new Error('Monto inválido');
-  const descripcion = String(d.descripcion || '').trim() || 'Sin descripción';
-  const fecha = d.fecha ? String(d.fecha).slice(0, 10) : Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
-
-  let categoria = CATEGORIAS.includes(d.categoria) ? d.categoria : '';
-  let sub = d.subcategoria || '';
-  if (!categoria) [categoria, sub] = adivinarCategoria_(descripcion, sub);
-
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    const id = d.id || Utilities.getUuid().slice(0, 8);
-    hoja_().appendRow([
-      // El apóstrofo evita que Sheets convierta "2026-10" o "06/09" en fechas.
-      id, fecha, "'" + fecha.slice(0, 7), d.tipo === 'Ingreso' ? 'Ingreso' : 'Gasto', descripcion, monto,
-      categoria, d.clase || 'Variable', sub, d.medio || 'Dinero MP', d.cuota ? "'" + d.cuota : '', origen,
-      Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'),
-    ]);
-    return { id, monto, categoria };
+    const fila = armarFila_(Object.assign({}, d, { id: d.id || Utilities.getUuid().slice(0, 8) }), origen);
+    hoja_().appendRow(fila);
+    return { id: fila[COL.ID], monto: fila[COL.Monto], categoria: fila[COL['Categoría']] };
   } finally {
     lock.releaseLock();
   }
+}
+
+/** Normaliza lo que llega del atajo, del panel o de un mail a una fila de la hoja. */
+function armarFila_(d, origen, creado) {
+  const tipo = ['Ingreso', 'Saldo'].includes(d.tipo) ? d.tipo : 'Gasto';
+  const monto = numero_(d.monto);
+  if (!monto && tipo !== 'Saldo') throw new Error('Monto inválido');
+  const descripcion = String(d.descripcion || '').trim() || 'Sin descripción';
+  const fecha = d.fecha ? String(d.fecha).slice(0, 10) : Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+  const mes = /^\d{4}-\d{2}$/.test(d.mes || '') ? d.mes : fecha.slice(0, 7);
+
+  let categoria = tipo === 'Saldo' ? CAT_SALDO : CAT_INGRESO, sub = d.subcategoria || '';
+  if (tipo === 'Gasto') {
+    categoria = CATEGORIAS.includes(d.categoria) ? d.categoria : '';
+    if (!categoria) [categoria, sub] = adivinarCategoria_(descripcion, sub);
+  }
+  // El apóstrofo evita que Sheets convierta "2026-10" o "06/09" en fechas.
+  return [
+    d.id, fecha, "'" + mes, tipo, descripcion, monto, categoria,
+    tipo === 'Gasto' ? (d.clase === 'Fijo' ? 'Fijo' : 'Variable') : '', sub,
+    tipo === 'Gasto' ? (d.medio || 'Dinero MP') : (d.medio || ''),
+    d.cuota ? "'" + d.cuota : '', origen,
+    creado || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'),
+    categoria === CAT_AHORRO && numero_(d.usd) ? numero_(d.usd) : '',
+  ];
 }
 
 /** Reusa la categoría del último gasto con la misma descripción; si no hay, aplica REGLAS. */
@@ -226,6 +262,47 @@ function formato_(n) {
 function tokenValido_(k) {
   const t = PropertiesService.getScriptProperties().getProperty('TOKEN');
   return Boolean(t) && k === t;
+}
+
+/**
+ * Una sola vez: completa lo que el importador no tomó del Excel.
+ * - Agosto 2026: Ahorro USD cargado a mano en la celda G16 (=(1512250+1112800+1497000)/2).
+ * - USD comprados por mes (celda "AHORRO USD"), en el mayor movimiento de ahorro de cada mes.
+ */
+function corregirHistorico() {
+  const sh = hoja_();
+  asegurarEncabezado_(sh);
+  if (!filaDeId_(sh, 'hist-202608-ajuste')) {
+    sh.appendRow(armarFila_({
+      id: 'hist-202608-ajuste', fecha: '2026-08-01', mes: '2026-08', descripcion: 'Ahorro USD (carga manual)',
+      monto: 2061025, categoria: CAT_AHORRO, clase: 'Fijo', subcategoria: 'Compra USD', medio: 'Fijo mensual',
+    }, 'histórico', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')));
+  }
+  const usdPorMes = { '2026-05': 2100, '2026-06': 4036, '2026-07': 4756, '2026-09': 950, '2026-10': 1800 };
+  const datos = sh.getRange(2, 1, sh.getLastRow() - 1, COLUMNAS.length).getValues();
+  const tz = sh.getParent().getSpreadsheetTimeZone();
+  Object.entries(usdPorMes).forEach(([mes, usd]) => {
+    let mejor = -1;
+    datos.forEach((r, i) => {
+      const m = r[COL.Mes] instanceof Date ? Utilities.formatDate(r[COL.Mes], tz, 'yyyy-MM') : String(r[COL.Mes]);
+      if (m === mes && r[COL['Categoría']] === CAT_AHORRO && (mejor < 0 || r[COL.Monto] > datos[mejor][COL.Monto])) mejor = i;
+    });
+    if (mejor >= 0) sh.getRange(mejor + 2, COL.USD + 1).setValue(usd);
+  });
+  Logger.log('Histórico corregido');
+}
+
+function asegurarEncabezado_(sh) {
+  if (sh.getRange(1, COLUMNAS.length).getValue() !== COLUMNAS[COLUMNAS.length - 1]) {
+    sh.getRange(1, 1, 1, COLUMNAS.length).setValues([COLUMNAS]);
+  }
+}
+
+function filaDeId_(sh, id) {
+  if (sh.getLastRow() < 2) return 0;
+  const ids = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+  const i = ids.findIndex(r => String(r[0]) === String(id));
+  return i < 0 ? 0 : i + 2;
 }
 
 function hoja_() {

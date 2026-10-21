@@ -21,6 +21,8 @@ scripts/importar_historico.py    Presupuesto_mensual.xlsx → Gastos.xlsx (hoja 
    El acceso "cualquier usuario" es necesario para que el atajo pueda enviar datos sin login; lo que protege los datos es el token.
 5. Panel: abrir `URL/exec?k=TOKEN` en Safari → Compartir → **Agregar a inicio**.
 
+Después de actualizar a la versión con pestañas (v3), ejecutar una vez `corregirHistorico` desde el editor: agrega el ahorro de agosto que estaba cargado a mano en el Excel y los USD comprados por mes.
+
 Al cambiar el código: **Implementar → Administrar implementaciones → editar → Versión nueva** (así la URL no cambia).
 
 ## Atajo de iPhone "Registrar gasto"
@@ -42,6 +44,9 @@ Si en el paso 4 no querés elegir, poné la categoría vacía: el servidor reusa
 Se dispara cada vez que cerrás la app, aunque no hayas pagado: cancelás en el primer paso.
 
 ## Reglas de datos
+
+- **Saldo disponible** = último "Ajustar saldo" + ingresos − gastos registrados después. Los consumos con tarjeta de crédito no lo mueven hasta que se paga el resumen: después de pagarlo, ajustá el saldo.
+- **Consumo** excluye la categoría 💰 Ahorro USD; el ahorro se muestra aparte (pestaña Ahorros). Resultado del mes = ingresos − consumo − ahorro.
 
 - `Mes` es el mes de presupuesto. Para la tarjeta es el mes del resumen, no el de la compra.
 - Los pagos con **tarjeta de crédito** hechos por Mercado Pago no se importan del mail: ya vienen en el resumen. Al registrarlos con el atajo, usá medio "Tarjeta de crédito" solo si no vas a cargar el resumen; si no, se duplican.
