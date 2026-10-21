@@ -3,6 +3,7 @@
 <head>
 <base target="_top">
 <meta charset="utf-8">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
     color-scheme: light;
@@ -185,6 +186,25 @@
   .sk { background: linear-gradient(90deg, var(--surface-2), var(--surface), var(--surface-2)); background-size: 200% 100%; animation: sk 1.2s infinite; border-radius: 16px; height: 86px; margin-bottom: 10px; }
   @keyframes sk { to { background-position: -200% 0; } }
 
+  /* importador */
+  .archivo { display: block; text-align: center; cursor: pointer; }
+  .imp-op { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; grid-column: 1 / -1; padding-top: 4px; }
+  .check input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--s1); }
+  .imp-fila { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+  .imp-fila:first-child { border-top: 0; }
+  .imp-fila.off { opacity: .45; }
+  .imp-fila > input { width: 20px; height: 20px; margin: 0; accent-color: var(--s1); }
+  .imp-fila .d { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .imp-fila .m { font-size: 12px; color: var(--muted); }
+  .imp-fila select { grid-column: 2 / -1; height: 34px; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 0 8px; width: 100%; }
+  .imp-fila select.revisar { border-color: var(--s2); }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: var(--surface-2); color: var(--text-2); margin-left: 4px; }
+  .badge.rev { color: var(--s2); }
+  .imp-bar { position: fixed; z-index: 8; left: 0; right: 0; bottom: calc(57px + env(safe-area-inset-bottom)); padding: 10px 16px; background: var(--bg); border-top: 1px solid var(--line); }
+  .imp-bar .btn { display: block; width: 100%; max-width: 728px; margin: 0 auto; }
+  .control { font-size: 13px; margin-top: 4px; }
+
   @media (min-width: 620px) { .grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 </style>
 </head>
@@ -251,12 +271,40 @@
     <div class="grid c4">
       <div class="kpi"><div class="l">Ahorro del mes</div><div class="v num" id="aMes"></div><div class="s" id="aMesS"></div></div>
       <div class="kpi"><div class="l">Tasa de ahorro</div><div class="v num" id="aTasa"></div><div class="s">del ingreso del mes</div></div>
-      <div class="kpi"><div class="l">USD acumulados</div><div class="v num" id="aUsd"></div><div class="s" id="aUsdS"></div></div>
+      <button class="kpi tap" id="aUsdBtn"><div class="l">USD que tenés <span class="edit">Ajustar</span></div><div class="v num" id="aUsd"></div><div class="s" id="aUsdS"></div></button>
       <div class="kpi"><div class="l">Ahorro acumulado</div><div class="v num" id="aAcum"></div><div class="s" id="aAcumS"></div></div>
     </div>
     <div class="card"><h2>Ahorro por mes <small>en pesos · tocá un mes</small></h2><div class="chart" id="chAho"></div></div>
     <div class="card"><h2>Mes a mes</h2><div class="scroll-x"><table class="tabla num" id="aTabla"></table></div></div>
     <div class="card"><h2>Movimientos de ahorro <small>tocá uno para cargar los USD</small></h2><div class="movs" id="aLista"></div></div>
+  </section>
+
+  <!-- IMPORTAR RESUMEN -->
+  <section class="vista" id="v-importar">
+    <div class="card">
+      <h2>Resumen de tarjeta</h2>
+      <p class="ayuda" style="margin:0 0 12px">Adjuntá el PDF del resumen (BBVA Visa o Mastercard). Se lee en este dispositivo: el archivo no se sube a ningún lado.</p>
+      <label class="btn prim archivo">Elegir PDF<input type="file" id="impArchivo" accept="application/pdf,.pdf" hidden></label>
+      <div class="control" id="impEstado"></div>
+    </div>
+    <div id="impRes" class="oculto">
+      <div class="grid">
+        <div class="kpi"><div class="l">Tarjeta</div><div class="v" id="impTarjeta" style="font-size:16px"></div><div class="s" id="impFechas"></div></div>
+        <div class="kpi"><div class="l">Total del resumen</div><div class="v num" id="impTotal"></div><div class="s" id="impControl"></div></div>
+      </div>
+      <div class="card">
+        <div class="imp-op campos">
+          <label class="campo">Mes de presupuesto<input type="month" id="impMes"></label>
+          <label class="campo">Cotización USD<input id="impCotiz" inputmode="decimal" placeholder="Para consumos en USD"></label>
+          <label class="check"><input type="checkbox" id="impPago" checked><span id="impPagoTxt"></span></label>
+        </div>
+      </div>
+      <div class="card"><h2>Por categoría <small id="impCatsTot"></small></h2><div id="impCats"></div></div>
+      <div class="chips" id="impFiltro"></div>
+      <div class="movs" id="impLista"></div>
+      <div style="height:70px"></div>
+      <div class="imp-bar"><button class="btn prim" id="impGuardar">Importar</button></div>
+    </div>
   </section>
 </main>
 
@@ -276,9 +324,9 @@
 <dialog id="dlg">
   <form class="ed" id="frm">
     <div class="ed-h"><h3 id="edTit">Nuevo movimiento</h3><button type="button" id="cerrar" aria-label="Cerrar">×</button></div>
-    <p class="ayuda oculto" id="ayudaSaldo">Sumá lo que tenés hoy en todas tus cuentas (Mercado Pago, bancos, efectivo). Desde acá, cada ingreso lo suma y cada gasto lo resta; los consumos con tarjeta de crédito no lo tocan hasta que los pagás.</p>
+    <p class="ayuda oculto" id="ayudaSaldo"></p>
     <div class="seg" id="segTipo"><button type="button" data-t="Gasto" class="on">Gasto</button><button type="button" data-t="Ingreso">Ingreso</button></div>
-    <label class="monto"><span>$</span><input id="fMonto" inputmode="decimal" placeholder="0" autocomplete="off" required></label>
+    <label class="monto"><span id="fMoneda">$</span><input id="fMonto" inputmode="decimal" placeholder="0" autocomplete="off" required></label>
     <div class="campos">
       <label class="campo full grupo-mov">Descripción<input id="fDesc" list="dlDesc" placeholder="Ej: Kiosco" required autocomplete="off"></label>
       <label class="campo grupo-gasto">Categoría<select id="fCat"></select></label>
@@ -303,6 +351,7 @@
     <button data-nuevo="Ingreso"><span class="e">💵</span><span>Ingreso<small>Emprendimiento, sueldo, cobros</small></span></button>
     <button data-nuevo="Ahorro"><span class="e">💰</span><span>Ahorro<small>Compra de dólares</small></span></button>
     <button data-nuevo="Saldo"><span class="e">🏦</span><span>Ajustar saldo<small>Lo que tenés hoy en tus cuentas</small></span></button>
+    <button data-nuevo="Resumen"><span class="e">📄</span><span>Cargar resumen de tarjeta<small>PDF del banco: lo leo y categorizo</small></span></button>
   </div>
 </dialog>
 <datalist id="dlDesc"></datalist>
@@ -354,19 +403,32 @@ const esIngreso = f => f.tipo === 'Ingreso';
 const esGasto = f => f.tipo === 'Gasto';
 const esAhorro = f => esGasto(f) && f.categoria === CAT_AHORRO;
 const esConsumo = f => esGasto(f) && f.categoria !== CAT_AHORRO;
-const esMov = f => f.tipo !== 'Saldo';
+const esMov = f => f.tipo !== 'Saldo' && f.tipo !== 'SaldoUSD';
+const esPagoTarjeta = f => f.tipo === 'Pago tarjeta';
+
+/** Última foto de un tipo de saldo ('Saldo' o 'SaldoUSD') y los movimientos registrados después de ella. */
+function desdeFoto(tipo, cuenta) {
+  const fotos = D.filas.filter(f => f.tipo === tipo).sort((a, b) => (a.fecha + a.creado).localeCompare(b.fecha + b.creado));
+  const foto = fotos[fotos.length - 1];
+  if (!foto) return null;
+  const despues = D.filas.filter(f => cuenta(f) && f.fecha >= foto.fecha && f.creado >= foto.creado && f.id !== foto.id);
+  return { foto, despues };
+}
 
 /**
  * Saldo real: la última foto de saldo que cargaste, más los ingresos y menos los gastos
  * registrados después. Los consumos con tarjeta de crédito no mueven el saldo hasta que se pagan.
  */
 function saldoActual() {
-  const fotos = D.filas.filter(f => f.tipo === 'Saldo').sort((a, b) => (a.fecha + a.creado).localeCompare(b.fecha + b.creado));
-  const foto = fotos[fotos.length - 1];
-  if (!foto) return null;
-  const despues = D.filas.filter(f => esMov(f) && f.medio !== 'Tarjeta de crédito' &&
-    f.fecha >= foto.fecha && f.creado >= foto.creado && f.id !== foto.id);
-  return { foto, valor: foto.monto + suma(despues, f => esIngreso(f) ? f.monto : -f.monto), n: despues.length };
+  const r = desdeFoto('Saldo', f => esIngreso(f) || esPagoTarjeta(f) || (esGasto(f) && f.medio !== 'Tarjeta de crédito'));
+  return r && { foto: r.foto, valor: r.foto.monto + suma(r.despues, f => esIngreso(f) ? f.monto : -f.monto), n: r.despues.length };
+}
+
+/** USD que tenés: última foto de "Ajustar USD" más los USD comprados después; sin foto, todo lo comprado. */
+function usdActual() {
+  const r = desdeFoto('SaldoUSD', f => esAhorro(f) && f.usd);
+  if (!r) return { valor: suma(D.filas.filter(esAhorro), f => f.usd || 0), foto: null };
+  return { valor: r.foto.monto + suma(r.despues, f => f.usd), foto: r.foto };
 }
 const suma = (arr, fn = f => f.monto) => arr.reduce((s, f) => s + fn(f), 0);
 const cache = {};
@@ -391,8 +453,9 @@ function render() {
   $('next').disabled = i >= meses.length - 1;
   document.querySelectorAll('.vista').forEach(v => v.classList.toggle('on', v.id === 'v-' + vista));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v === vista));
-  $('titulo').textContent = { resumen: 'Resumen', movs: 'Movimientos', ingresos: 'Ingresos', ahorros: 'Ahorros' }[vista];
-  ({ resumen: rResumen, movs: rMovs, ingresos: rIngresos, ahorros: rAhorros })[vista]();
+  $('titulo').textContent = { resumen: 'Resumen', movs: 'Movimientos', ingresos: 'Ingresos', ahorros: 'Ahorros', importar: 'Resumen de tarjeta' }[vista];
+  $('fab').classList.toggle('oculto', vista === 'importar');
+  ({ resumen: rResumen, movs: rMovs, ingresos: rIngresos, ahorros: rAhorros, importar: rImportar })[vista]();
 }
 
 /** Variación contra el mes anterior. `masEsMejor` pinta en verde las subas (ingresos) en vez de las bajas (gastos). */
@@ -463,12 +526,13 @@ function rIngresos() {
 function rAhorros() {
   const t = totales(mesSel), hasta = meses.slice(0, meses.indexOf(mesSel) + 1);
   const acum = hasta.reduce((s, m) => s + totales(m).aho, 0);
-  const acumUsd = hasta.reduce((s, m) => s + totales(m).usd, 0);
+
   $('aMes').textContent = ars.format(t.aho);
   $('aMesS').textContent = t.usd ? 'USD ' + usdF.format(t.usd) : 'USD sin cargar';
   $('aTasa').textContent = t.ing ? pct(t.aho / t.ing) : '—';
-  $('aUsd').textContent = 'USD ' + usdF.format(acumUsd);
-  $('aUsdS').textContent = 'hasta ' + fMesC(mesSel) + ' ' + mesSel.slice(2, 4);
+  const u = usdActual();
+  $('aUsd').textContent = 'USD ' + usdF.format(u.valor);
+  $('aUsdS').textContent = u.foto ? `Ajustado el ${u.foto.fecha.slice(8, 10)}/${u.foto.fecha.slice(5, 7)} en USD ${usdF.format(u.foto.monto)}` : 'Suma de lo comprado · tocá para ajustar';
   $('aAcum').textContent = corto(acum);
   $('aAcumS').textContent = 'desde ' + fMesC(meses[0]) + ' ' + meses[0].slice(2, 4);
   columnas($('chAho'), meses.slice(-12), [{ nombre: 'Ahorro', color: 'var(--s1)', val: m => totales(m).aho }],
@@ -560,13 +624,19 @@ function armarListasEditor() {
 
 function setSeg(id, attr, val) { document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle('on', b.dataset[attr] === val)); }
 const segVal = (id, attr) => document.querySelector(`#${id} button.on`).dataset[attr];
-let modoSaldo = false;
+let modoSaldo = false, modoUsd = false;
+const AYUDA = {
+  Saldo: 'Sumá lo que tenés hoy en todas tus cuentas (Mercado Pago, bancos, efectivo). Desde acá, cada ingreso lo suma y cada gasto lo resta; los consumos con tarjeta de crédito no lo tocan hasta que pagás el resumen.',
+  SaldoUSD: 'Cuántos dólares tenés hoy ahorrados. Desde acá, cada compra de dólares que cargues en Ahorro los suma.',
+};
 function ajustarEditor() {
   const ing = segVal('segTipo', 't') === 'Ingreso';
   document.querySelectorAll('.grupo-gasto').forEach(e => e.classList.toggle('oculto', ing || modoSaldo));
   document.querySelectorAll('.grupo-mov').forEach(e => e.classList.toggle('oculto', modoSaldo));
   $('segTipo').classList.toggle('oculto', modoSaldo);
   $('ayudaSaldo').classList.toggle('oculto', !modoSaldo);
+  $('ayudaSaldo').textContent = AYUDA[modoUsd ? 'SaldoUSD' : 'Saldo'];
+  $('fMoneda').textContent = modoUsd ? 'USD' : '$';
   document.querySelectorAll('.grupo-usd').forEach(e => e.classList.toggle('oculto', ing || modoSaldo || $('fCat').value !== CAT_AHORRO));
   $('fDesc').placeholder = ing ? 'Ej: Sueldo' : 'Ej: Kiosco';
 }
@@ -574,15 +644,16 @@ function ajustarEditor() {
 /** f: movimiento a editar, o null para uno nuevo. clase: 'Gasto' | 'Ingreso' | 'Ahorro' | 'Saldo' para los nuevos. */
 function abrirEditor(f, clase) {
   editando = f ? f.id : null;
-  clase = f ? (f.tipo === 'Saldo' ? 'Saldo' : null) : clase || (vista === 'ingresos' ? 'Ingreso' : vista === 'ahorros' ? 'Ahorro' : 'Gasto');
-  modoSaldo = clase === 'Saldo';
+  clase = f ? (/^Saldo/.test(f.tipo) ? f.tipo : null) : clase || (vista === 'ingresos' ? 'Ingreso' : vista === 'ahorros' ? 'Ahorro' : 'Gasto');
+  modoSaldo = /^Saldo/.test(clase || '');
+  modoUsd = clase === 'SaldoUSD';
   const tipoNuevo = clase === 'Ingreso' ? 'Ingreso' : 'Gasto';
-  $('edTit').textContent = modoSaldo ? 'Saldo actual' : f ? 'Editar movimiento' : { Gasto: 'Nuevo gasto', Ingreso: 'Nuevo ingreso', Ahorro: 'Nuevo ahorro' }[clase];
+  $('edTit').textContent = modoUsd ? 'Dólares ahorrados hoy' : modoSaldo ? 'Saldo actual' : f ? 'Editar movimiento' : { Gasto: 'Nuevo gasto', Ingreso: 'Nuevo ingreso', Ahorro: 'Nuevo ahorro' }[clase];
   setSeg('segTipo', 't', f ? (esIngreso(f) ? 'Ingreso' : 'Gasto') : tipoNuevo);
   setSeg('segClase', 'c', f && f.clase === 'Fijo' ? 'Fijo' : 'Variable');
-  const sa = modoSaldo && !f ? saldoActual() : null;
+  const sa = modoSaldo && !f ? (modoUsd ? usdActual() : saldoActual()) : null;
   $('fMonto').value = f ? String(f.monto).replace('.', ',') : sa ? String(Math.round(sa.valor)) : '';
-  $('fDesc').value = f ? f.descripcion : { Ahorro: 'Compra USD', Ingreso: 'Emprendimiento', Saldo: 'Saldo de cuentas' }[clase] || '';
+  $('fDesc').value = f ? f.descripcion : { Ahorro: 'Compra USD', Ingreso: 'Emprendimiento', Saldo: 'Saldo de cuentas', SaldoUSD: 'Dólares ahorrados' }[clase] || '';
   $('fCat').value = f ? (D.categorias.includes(f.categoria) ? f.categoria : '') : (clase === 'Ahorro' ? CAT_AHORRO : '');
   $('fSub').value = f ? f.subcategoria || '' : '';
   const hoy = hoyISO();
@@ -599,7 +670,7 @@ function abrirEditor(f, clase) {
 
 function leerEditor() {
   return {
-    tipo: modoSaldo ? 'Saldo' : segVal('segTipo', 't'), monto: $('fMonto').value, descripcion: $('fDesc').value.trim(),
+    tipo: modoUsd ? 'SaldoUSD' : modoSaldo ? 'Saldo' : segVal('segTipo', 't'), monto: $('fMonto').value, descripcion: $('fDesc').value.trim(),
     categoria: $('fCat').value, subcategoria: $('fSub').value.trim(), fecha: $('fFecha').value, mes: $('fMes').value,
     medio: $('fMedio').value, clase: segVal('segClase', 'c'), cuota: $('fCuota').value.trim(), usd: $('fUsd').value,
   };
@@ -625,9 +696,12 @@ $('cerrarMenu').onclick = () => $('menu').close();
 $('menu').addEventListener('click', e => {
   if (e.target === $('menu')) return $('menu').close();
   const b = e.target.closest('[data-nuevo]');
-  if (b) { $('menu').close(); abrirEditor(null, b.dataset.nuevo); }
+  if (!b) return;
+  $('menu').close();
+  if (b.dataset.nuevo === 'Resumen') irA('importar'); else abrirEditor(null, b.dataset.nuevo);
 });
 $('kSaldoBtn').onclick = () => abrirEditor(null, 'Saldo');
+$('aUsdBtn').onclick = () => abrirEditor(null, 'SaldoUSD');
 $('cerrar').onclick = () => $('dlg').close();
 $('dlg').addEventListener('click', e => { if (e.target === $('dlg')) $('dlg').close(); });
 document.querySelectorAll('#segTipo button, #segClase button').forEach(b => b.onclick = () => {
@@ -655,7 +729,7 @@ $('frm').onsubmit = e => {
   const run = google.script.run
     .withSuccessHandler(() => {
       $('guardar').disabled = false; $('dlg').close();
-      aviso(modoSaldo ? 'Saldo actualizado' : editando ? 'Cambios guardados' : 'Movimiento agregado');
+      aviso(modoUsd ? 'Dólares actualizados' : modoSaldo ? 'Saldo actualizado' : editando ? 'Cambios guardados' : 'Movimiento agregado');
       if (!modoSaldo) mesSel = datos.mes;
       cargar();
     })
@@ -669,6 +743,221 @@ $('borrar').onclick = () => {
   D.filas = D.filas.filter(f => f.id !== id);
   $('dlg').close(); render(); aviso('Movimiento eliminado');
   google.script.run.withFailureHandler(err => { aviso('No se pudo eliminar: ' + err.message); cargar(); }).borrar(K, id);
+};
+
+/* ---------- importador de resúmenes de tarjeta ---------- */
+const MESES_PDF = { ene: 1, feb: 2, mar: 3, abr: 4, may: 5, jun: 6, jul: 7, ago: 8, sep: 9, set: 9, oct: 10, nov: 11, dic: 12 };
+const RE_FECHA = /^(\d{2})-([A-Za-z]{3})-(\d{2})$/;
+const RE_IMPORTE = /^-?[\d.]+,\d{2}$/;
+const importe = t => parseFloat(t.replace(/\./g, '').replace(',', '.'));
+const fechaPdf = t => { const m = (t || '').match(RE_FECHA), n = m && MESES_PDF[m[2].toLowerCase()];
+  return n ? `20${m[3]}-${String(n).padStart(2, '0')}-${m[1]}` : null; };
+// Categorías que no dependen del comercio (impuestos y cargos del banco).
+const REGLAS_RESUMEN = [
+  [/IMPUESTO|SELLOS|\bIVA\b|IIBB|PERCEP|\bRG\b|INTERES|COMISION|CARGO/i, '💳 Impuestos/Financiero'],
+  [/SHELL|YPF|AXION|PUMA/i, '🚗 Transporte', 'Combustible'],
+  [/PEAJE|AUBASA|AUTOPISTA/i, '🚗 Transporte', 'Peaje/Autopista'],
+  [/ESTACIONAMIENTO/i, '🚗 Transporte', 'Estacionamiento'],
+  [/PROPINA/i, '🍽 Comida/Delivery', 'Propina delivery'],
+  [/PEDIDOSYA|RAPPI/i, '🛒 Supermercado', 'Delivery/Super'],
+  [/VTV|PATENTE|ARBA/i, '🚗 Transporte', 'Auto'],
+  [/DESPEGAR|AEROLINEAS|FLYBONDI|JETSMART|BOOKING|AIRBNB|HOTEL/i, '⚽ Entretenimiento', 'Viaje'],
+  [/CLUB ATLETICO|CARP|CUOTA SOCIAL/i, '⚽ Entretenimiento', 'Club'],
+  [/MERCADOLIBRE|\bMELI\b|TEMU|SHEIN|AMAZON/i, '👕 Ropa/Compras', 'Compras Online'],
+  [/FARMACIA|OSPE|OSDE|SWISS MEDICAL|GALENO/i, '❓ Otros', 'Salud'],
+  [/CARREFOUR|COTO|JUMBO|\bDIA\b|MARKET|VEA\b/i, '🛒 Supermercado', 'Supermercado'],
+  [/NETFLIX|SPOTIFY|DISNEY|HBO|YOUTUBE|APPLE|STEAM|ANTHROPIC|OPENAI/i, '⚽ Entretenimiento', 'Suscripción'],
+  [/SEGURO|FEDERACION PAT|SAN CRISTOBAL|ZURICH|SANCOR/i, '🛡 Seguros', 'Seguro'],
+  [/EDELAP|EDENOR|EDESUR|CAMUZZI|METROGAS|PERSONAL|MOVISTAR|CLARO|TUENTI|TELECENTRO|FIBERTEL/i, '🏠 Hogar', 'Servicios'],
+];
+
+let IMP = null, impFiltro = 'todos';
+
+async function lineasPdf(buf) {
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const out = [];
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const items = (await (await pdf.getPage(n)).getTextContent()).items.filter(i => i.str.trim());
+    const filas = [];
+    items.forEach(i => {
+      const y = i.transform[5];
+      let f = filas.find(f => Math.abs(f.y - y) < 2.5);
+      if (!f) filas.push(f = { y, items: [] });
+      f.items.push({ x: i.transform[4], fin: i.transform[4] + i.width, s: i.str.trim() });
+    });
+    filas.sort((a, b) => b.y - a.y).forEach(f => {
+      f.items.sort((a, b) => a.x - b.x);
+      out.push({ texto: f.items.map(i => i.s).join(' '), items: f.items });
+    });
+  }
+  return out;
+}
+
+/** Lee un resumen BBVA (Visa/Mastercard): encabezado, consumos, impuestos y créditos. */
+function parsearResumen(lineas) {
+  const r = { tarjeta: '', cierre: null, vence: null, total: null, anterior: 0, pagos: 0, filas: [] };
+  let sec = null, detalle = false, finPesos = 502, finUsd = 574, iniCupon = 380;
+  for (let i = 0; i < lineas.length; i++) {
+    const { texto, items } = lineas[i];
+    if (!r.tarjeta && / cuenta \d/.test(texto)) r.tarjeta = texto.split(/ cuenta /)[0].trim();
+    if (!r.cierre && /^CIERRE ACTUAL/.test(texto) && lineas[i + 1]) {
+      const sig = lineas[i + 1].items.map(x => x.s);
+      const fs = sig.filter(x => RE_FECHA.test(x)), ns = sig.filter(x => RE_IMPORTE.test(x));
+      r.cierre = fechaPdf(fs[0]); r.vence = fechaPdf(fs[1]); r.total = ns[0] ? importe(ns[0]) : null;
+    }
+    if (!detalle && /^SALDO ANTERIOR/.test(texto)) { const n = items.find(x => RE_IMPORTE.test(x.s)); if (n) r.anterior = importe(n.s); }
+    if (/^DETALLE$/.test(texto)) { detalle = true; continue; }
+    if (!detalle) continue;
+    if (/^FECHA /.test(texto)) {
+      const pe = items.find(x => x.s === 'PESOS'), cu = items.find(x => /^NRO/.test(x.s));
+      if (pe) { finPesos = pe.fin; finUsd = items[items.length - 1].fin; }
+      if (cu) iniCupon = cu.x;
+      continue;
+    }
+    if (/^Sus pagos/i.test(texto)) { sec = 'pagos'; continue; }
+    if (/^Consumos /i.test(texto)) { sec = 'consumos'; continue; }
+    if (/^Impuestos, cargos/i.test(texto)) { sec = 'impuestos'; continue; }
+    if (sec && /SALDO ACTUAL/.test(texto)) break;
+    const iF = items.findIndex(x => RE_FECHA.test(x.s));
+    if (!sec || iF < 0) continue;
+    const resto = items.slice(iF + 1);
+    const pesos = resto.find(x => RE_IMPORTE.test(x.s) && Math.abs(x.fin - finPesos) < 12);
+    const usd = resto.find(x => RE_IMPORTE.test(x.s) && Math.abs(x.fin - finUsd) < 12);
+    let desc = resto.filter(x => x.fin < iniCupon - 2 || (sec === 'impuestos' && x !== pesos && x !== usd)).map(x => x.s).join(' ');
+    if (/^SU PAGO/i.test(desc)) { if (pesos) r.pagos += importe(pesos.s); continue; }
+    if (!pesos && !usd) continue;
+    let cuota = '';
+    desc = desc.replace(/\s*C\.(\d{2}\/\d{2})\b/, (_, c) => { cuota = c; return ''; }).replace(/\s+/g, ' ').trim();
+    if (usd && !pesos) desc = desc.replace(/\s+[\d.]+,\d{2}$/, '') + ` (USD ${usd.s})`;
+    r.filas.push({ fecha: fechaPdf(items[iF].s), descripcion: desc, cuota, monto: pesos ? importe(pesos.s) : 0, usd: usd && !pesos ? importe(usd.s) : 0, sec });
+  }
+  return r;
+}
+
+/** Clave para reconocer un comercio entre resúmenes: sin cuotas, códigos ni números. */
+const claveComercio = d => String(d || '').toUpperCase().replace(/\(USD[^)]*\)/, '').replace(/C\.\d+\/\d+/, '')
+  .split(/\s+/).filter(t => !/\d{3,}/.test(t) && !/^[\d.,%$()-]+$/.test(t)).join(' ').trim();
+const limpiarSub = s => String(s || '').replace(/\/?\s*Cuota.*$/i, '').replace(/\s*\(.*\)$/, '').trim();
+
+function categorizar(filas, mesDestino) {
+  const hist = {};
+  D.filas.filter(f => esGasto(f) && D.categorias.includes(f.categoria)).sort((a, b) => a.fecha.localeCompare(b.fecha))
+    .forEach(f => { const k = claveComercio(f.descripcion); if (k.length >= 3) hist[k] = f; });
+  const claves = Object.keys(hist);
+  filas.forEach(f => {
+    const k = claveComercio(f.descripcion);
+    let h = hist[k];
+    if (!h && k.length >= 5) {
+      const cand = claves.filter(c => c.length >= 5 && (c.startsWith(k) || k.startsWith(c))).sort((a, b) => b.length - a.length);
+      h = cand.length && hist[cand[0]];
+    }
+    if (h) Object.assign(f, { categoria: h.categoria, subcategoria: limpiarSub(h.subcategoria), clase: f.cuota ? 'Fijo' : (h.clase || 'Variable'), origenCat: 'historial' });
+    else {
+      const regla = REGLAS_RESUMEN.find(([re]) => re.test(f.descripcion));
+      Object.assign(f, regla
+        ? { categoria: regla[1], subcategoria: regla[2] || '', origenCat: 'regla' }
+        : { categoria: '❓ Otros', subcategoria: '', origenCat: 'revisar' });
+      f.clase = f.cuota ? 'Fijo' : 'Variable';
+    }
+    f.clave = k;
+    // Las cuotas repiten fecha y monto todos los meses: es duplicado solo si es del mismo resumen (mes) o la misma cuota.
+    f.duplicado = D.filas.some(x => esGasto(x) && x.medio === 'Tarjeta de crédito' && x.fecha === f.fecha &&
+      Math.abs(x.monto - f.monto) < 0.01 && (x.mes === mesDestino || (f.cuota && x.cuota === f.cuota)));
+    f.incluir = !f.duplicado && (f.monto !== 0 || f.usd > 0);
+  });
+}
+
+async function leerArchivo(file) {
+  $('impEstado').textContent = 'Leyendo el PDF…';
+  $('impRes').classList.add('oculto');
+  try {
+    if (!window.pdfjsLib) throw new Error('No se pudo cargar el lector de PDF. Revisá la conexión.');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const r = parsearResumen(await lineasPdf(await file.arrayBuffer()));
+    if (!r.filas.length) throw new Error('No encontré consumos. ¿Es un resumen de tarjeta BBVA?');
+    const mes = (r.vence || r.cierre || hoyISO()).slice(0, 7);
+    categorizar(r.filas, mes);
+    IMP = r; impFiltro = 'todos';
+    $('impMes').value = mes;
+    $('impEstado').textContent = '';
+    $('impRes').classList.remove('oculto');
+    rImportar();
+  } catch (e) {
+    IMP = null;
+    $('impEstado').innerHTML = '<span class="neg">' + esc(e.message || e) + '</span>';
+  }
+}
+
+const cotiz = () => { const v = importe(($('impCotiz').value || '0').replace(/[^\d.,]/g, '').replace(/^(\d+)$/, '$1,00')); return isFinite(v) ? v : 0; };
+const montoImp = f => f.usd && !f.monto ? Math.round(f.usd * cotiz() * 100) / 100 : f.monto;
+
+function rImportar() {
+  if (!IMP) return;
+  const r = IMP, fs = r.filas;
+  const fmtF = d => d ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(2, 4)}` : '—';
+  $('impTarjeta').textContent = r.tarjeta || 'Tarjeta';
+  $('impFechas').textContent = `Cierre ${fmtF(r.cierre)} · vence ${fmtF(r.vence)}`;
+  $('impTotal').textContent = r.total != null ? ars.format(r.total) : '—';
+  const leido = suma(fs.filter(f => f.monto), f => f.monto), esperado = (r.total || 0) - r.anterior - r.pagos;
+  $('impControl').innerHTML = Math.abs(leido - esperado) < 1
+    ? `<span class="pos">✓ Leí todo (${fs.length} líneas)</span>`
+    : `<span class="neg">Leí ${ars.format(leido)}, faltan ${ars.format(esperado - leido)}</span>`;
+  $('impPagoTxt').textContent = r.total ? `Descontar ${ars.format(r.total)} del saldo disponible el ${fmtF(r.vence)} (pago del resumen)` : 'Descontar el pago del saldo';
+
+  const sel = fs.filter(f => f.incluir && montoImp(f));
+  const porCat = {};
+  sel.forEach(f => { porCat[f.categoria] = (porCat[f.categoria] || 0) + montoImp(f); });
+  const totSel = suma(sel, montoImp);
+  $('impCatsTot').textContent = ars.format(totSel);
+  barras($('impCats'), Object.entries(porCat).sort((a, b) => b[1] - a[1]), totSel);
+
+  const nRev = fs.filter(f => f.origenCat === 'revisar').length, nDup = fs.filter(f => f.duplicado).length;
+  $('impFiltro').innerHTML = [['todos', `Todos (${fs.length})`], ['revisar', `A revisar (${nRev})`], ['dup', `Ya cargados (${nDup})`]]
+    .filter(([k], i) => i === 0 || (k === 'revisar' ? nRev : nDup))
+    .map(([k, n]) => `<button class="chip ${impFiltro === k ? 'on' : ''}" data-impf="${k}">${n}</button>`).join('');
+  const vis = fs.map((f, i) => [f, i]).filter(([f]) => impFiltro === 'todos' || (impFiltro === 'revisar' ? f.origenCat === 'revisar' : f.duplicado));
+  const opciones = D.categorias.map(c => `<option>${esc(c)}</option>`).join('');
+  $('impLista').innerHTML = vis.map(([f, i]) => `
+    <div class="imp-fila ${f.incluir ? '' : 'off'}">
+      <input type="checkbox" data-impi="${i}" ${f.incluir ? 'checked' : ''} ${f.usd && !cotiz() ? 'disabled' : ''}>
+      <div style="min-width:0"><div class="d">${esc(f.descripcion)}</div>
+        <div class="m">${fmtF(f.fecha)}${f.cuota ? ' · cuota ' + f.cuota : ''}${f.origenCat === 'revisar' ? '<span class="badge rev">Elegí categoría</span>' : ''}${f.duplicado ? '<span class="badge">Ya cargado</span>' : ''}${f.usd && !cotiz() ? '<span class="badge rev">Falta cotización</span>' : ''}</div></div>
+      <div class="num ${f.monto < 0 ? 'pos' : ''}">${f.usd && !f.monto ? 'USD ' + esc(String(f.usd).replace('.', ',')) : ars.format(f.monto)}</div>
+      <select data-impc="${i}" class="${f.origenCat === 'revisar' ? 'revisar' : ''}">${opciones}</select>
+    </div>`).join('');
+  vis.forEach(([f, i]) => { $('impLista').querySelector(`[data-impc="${i}"]`).value = f.categoria; });
+  const n = sel.length;
+  $('impGuardar').textContent = n ? `Importar ${n} movimiento${n === 1 ? '' : 's'} · ${ars.format(totSel)}` : 'Nada para importar';
+  $('impGuardar').disabled = !n;
+}
+
+$('impArchivo').onchange = e => { const f = e.target.files[0]; if (f) leerArchivo(f); e.target.value = ''; };
+$('impCotiz').oninput = () => { IMP && IMP.filas.forEach(f => { if (f.usd && !f.monto && !f.duplicado) f.incluir = cotiz() > 0; }); rImportar(); };
+$('impLista').addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.impi) { IMP.filas[t.dataset.impi].incluir = t.checked; rImportar(); }
+  if (t.dataset.impc) {
+    const f = IMP.filas[t.dataset.impc];
+    // El mismo comercio en otras líneas del resumen toma la misma categoría, salvo que ya la hayas cambiado a mano.
+    IMP.filas.forEach(g => { if (g === f || (g.clave === f.clave && g.origenCat !== 'manual')) Object.assign(g, { categoria: t.value, origenCat: 'manual' }); });
+    rImportar();
+  }
+});
+document.addEventListener('click', e => { const c = e.target.closest('[data-impf]'); if (c) { impFiltro = c.dataset.impf; rImportar(); } });
+
+$('impGuardar').onclick = () => {
+  const mes = $('impMes').value;
+  const filas = IMP.filas.filter(f => f.incluir && montoImp(f)).map(f => ({
+    tipo: 'Gasto', fecha: f.fecha, mes, descripcion: f.descripcion, monto: montoImp(f), categoria: f.categoria,
+    subcategoria: f.subcategoria, clase: f.clase, medio: 'Tarjeta de crédito', cuota: f.cuota,
+  }));
+  const pago = $('impPago').checked && IMP.total
+    ? { fecha: IMP.vence || hoyISO(), mes, descripcion: 'Pago resumen ' + (IMP.tarjeta || 'tarjeta'), monto: IMP.total, medio: 'Dinero MP' } : null;
+  $('impGuardar').disabled = true; $('impGuardar').textContent = 'Guardando…';
+  google.script.run
+    .withSuccessHandler(n => { aviso(`${filas.length} movimientos importados`); IMP = null; $('impRes').classList.add('oculto'); mesSel = mes; vista = 'resumen'; cargar(); })
+    .withFailureHandler(err => { aviso('Error: ' + err.message); rImportar(); })
+    .guardarLote(K, filas, pago);
 };
 
 /* tema: sigue al sistema hasta que lo cambies; se recuerda en este navegador */

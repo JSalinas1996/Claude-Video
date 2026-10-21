@@ -46,6 +46,8 @@ Se dispara cada vez que cerrás la app, aunque no hayas pagado: cancelás en el 
 ## Reglas de datos
 
 - **Saldo disponible** = último "Ajustar saldo" + ingresos − gastos registrados después. Los consumos con tarjeta de crédito no lo mueven hasta que se paga el resumen: después de pagarlo, ajustá el saldo.
+- **USD que tenés** = último "Ajustar USD" (pestaña Ahorros) + USD comprados cargados después.
+- **Resumen de tarjeta**: botón + → "Cargar resumen de tarjeta" → PDF de BBVA (Visa/Mastercard). Se lee en el navegador con pdf.js, se controla contra el total del resumen, se categoriza con el historial (misma clave de comercio) y reglas, marca duplicados (misma fecha y monto en el mismo mes o misma cuota) y opcionalmente agrega el "Pago de tarjeta", que solo descuenta del saldo.
 - **Consumo** excluye la categoría 💰 Ahorro USD; el ahorro se muestra aparte (pestaña Ahorros). Resultado del mes = ingresos − consumo − ahorro.
 
 - `Mes` es el mes de presupuesto. Para la tarjeta es el mes del resumen, no el de la compra.

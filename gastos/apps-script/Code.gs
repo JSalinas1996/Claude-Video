@@ -8,7 +8,7 @@
 
 const TZ = 'America/Argentina/Buenos_Aires';
 const HOJA = 'Movimientos';
-const VERSION = 'v3';
+const VERSION = 'v4';
 const COLUMNAS = ['ID', 'Fecha', 'Mes', 'Tipo', 'Descripción', 'Monto', 'Categoría', 'Clase',
   'Subcategoría', 'Medio', 'Cuota', 'Origen', 'Creado', 'USD'];
 const COL = Object.fromEntries(COLUMNAS.map((c, i) => [c, i]));
@@ -18,7 +18,12 @@ const CATEGORIAS = ['🛒 Supermercado', '🍽 Comida/Delivery', '🚗 Transport
   '💰 Ahorro USD', '❓ Otros'];
 const CAT_INGRESO = '💵 Ingreso';
 const CAT_AHORRO = '💰 Ahorro USD';
-const CAT_SALDO = '🏦 Saldo';  // Tipo "Saldo": foto del saldo real de todas las cuentas; no suma en gastos ni ingresos.
+// Tipos que no son gasto ni ingreso: fotos de saldo (pesos y USD) y el pago del resumen de tarjeta,
+// que solo mueve el saldo disponible (los consumos ya están cargados uno por uno).
+const CAT_SALDO = '🏦 Saldo';
+const CAT_SALDO_USD = '💵 Saldo USD';
+const CAT_PAGO_TARJETA = '💳 Pago de tarjeta';
+const TIPOS = { Gasto: '', Ingreso: CAT_INGRESO, Saldo: CAT_SALDO, SaldoUSD: CAT_SALDO_USD, 'Pago tarjeta': CAT_PAGO_TARJETA };
 const MEDIOS = ['Dinero MP', 'Tarjeta de crédito', 'Crédito MP', 'Transferencia banco', 'Efectivo', 'Fijo mensual'];
 
 // Palabra clave en la descripción → [categoría, subcategoría]. Se usa si no hay un gasto previo igual.
@@ -138,6 +143,23 @@ function editar(k, id, datos) {
   }
 }
 
+/** Alta en bloque desde el importador de resúmenes; `pago` (opcional) agrega el pago del resumen. */
+function guardarLote(k, filas, pago) {
+  if (!tokenValido_(k)) throw new Error('Acceso denegado');
+  const nuevas = filas.map(d => armarFila_(Object.assign({}, d, { id: Utilities.getUuid().slice(0, 8) }), 'resumen'));
+  if (pago) nuevas.push(armarFila_(Object.assign({}, pago, { tipo: 'Pago tarjeta', id: Utilities.getUuid().slice(0, 8) }), 'resumen'));
+  if (!nuevas.length) return 0;
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = hoja_();
+    sh.getRange(sh.getLastRow() + 1, 1, nuevas.length, COLUMNAS.length).setValues(nuevas);
+    return nuevas.length;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function borrar(k, id) {
   if (!tokenValido_(k)) throw new Error('Acceso denegado');
   const lock = LockService.getScriptLock();
@@ -204,14 +226,14 @@ function agregar_(d, origen) {
 
 /** Normaliza lo que llega del atajo, del panel o de un mail a una fila de la hoja. */
 function armarFila_(d, origen, creado) {
-  const tipo = ['Ingreso', 'Saldo'].includes(d.tipo) ? d.tipo : 'Gasto';
+  const tipo = d.tipo in TIPOS ? d.tipo : 'Gasto';
   const monto = numero_(d.monto);
-  if (!monto && tipo !== 'Saldo') throw new Error('Monto inválido');
+  if (!monto && !/^Saldo/.test(tipo)) throw new Error('Monto inválido');
   const descripcion = String(d.descripcion || '').trim() || 'Sin descripción';
   const fecha = d.fecha ? String(d.fecha).slice(0, 10) : Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
   const mes = /^\d{4}-\d{2}$/.test(d.mes || '') ? d.mes : fecha.slice(0, 7);
 
-  let categoria = tipo === 'Saldo' ? CAT_SALDO : CAT_INGRESO, sub = d.subcategoria || '';
+  let categoria = TIPOS[tipo], sub = d.subcategoria || '';
   if (tipo === 'Gasto') {
     categoria = CATEGORIAS.includes(d.categoria) ? d.categoria : '';
     if (!categoria) [categoria, sub] = adivinarCategoria_(descripcion, sub);
@@ -220,7 +242,7 @@ function armarFila_(d, origen, creado) {
   return [
     d.id, fecha, "'" + mes, tipo, descripcion, monto, categoria,
     tipo === 'Gasto' ? (d.clase === 'Fijo' ? 'Fijo' : 'Variable') : '', sub,
-    tipo === 'Gasto' ? (d.medio || 'Dinero MP') : (d.medio || ''),
+    tipo === 'Gasto' || tipo === 'Pago tarjeta' ? (d.medio || 'Dinero MP') : (d.medio || ''),
     d.cuota ? "'" + d.cuota : '', origen,
     creado || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'),
     categoria === CAT_AHORRO && numero_(d.usd) ? numero_(d.usd) : '',
