@@ -249,7 +249,7 @@
       <button class="kpi hero tap" id="kSaldoBtn"><div class="l">Saldo disponible <span class="edit">Ajustar</span></div><div class="v num" id="kSaldo"></div><div class="s" id="kSaldoS"></div></button>
       <div class="kpi"><div class="l"><i class="dot" style="background:var(--s1)"></i>Ingresos</div><div class="v num" id="kIng"></div><div class="s" id="kIngS"></div></div>
       <div class="kpi"><div class="l"><i class="dot" style="background:var(--s2)"></i>Consumo</div><div class="v num" id="kCon"></div><div class="s" id="kConS"></div></div>
-      <div class="kpi"><div class="l">Ahorro</div><div class="v num" id="kAho"></div><div class="s" id="kAhoS"></div></div>
+      <button class="kpi tap" id="kAhoBtn"><div class="l">Ahorro <span class="edit">Ver</span></div><div class="v num" id="kAho"></div><div class="s" id="kAhoS"></div></button>
       <div class="kpi"><div class="l">Resultado del mes</div><div class="v num" id="kDisp"></div><div class="s" id="kDispS"></div></div>
     </div>
     <button class="mas" id="irResumen" style="margin:0 0 12px">📄 Cargar resumen de tarjeta</button>
@@ -290,6 +290,10 @@
       <div class="kpi"><div class="l">Tasa de ahorro</div><div class="v num" id="aTasa"></div><div class="s">del ingreso del mes</div></div>
       <button class="kpi tap" id="aUsdBtn"><div class="l">USD que tenés <span class="edit">Ajustar</span></div><div class="v num" id="aUsd"></div><div class="s" id="aUsdS"></div></button>
       <div class="kpi"><div class="l">Ahorro acumulado</div><div class="v num" id="aAcum"></div><div class="s" id="aAcumS"></div></div>
+    </div>
+    <div class="grid">
+      <button class="btn prim" id="aComprar">💵 Registrar compra de USD</button>
+      <button class="btn" id="aAjustar">✏️ Ajustar total de USD</button>
     </div>
     <div class="card"><h2>Ahorro por mes <small>en pesos · tocá un mes</small></h2><div class="chart" id="chAho"></div></div>
     <div class="card"><h2>Mes a mes</h2><div class="scroll-x"><table class="tabla num" id="aTabla"></table></div></div>
@@ -353,7 +357,7 @@
       <label class="campo grupo-mov">Medio<select id="fMedio"></select></label>
       <div class="campo grupo-gasto">Tipo de gasto<div class="seg" id="segClase"><button type="button" data-c="Variable" class="on">Variable</button><button type="button" data-c="Fijo">Fijo</button></div></div>
       <label class="campo grupo-gasto">Cuota<input id="fCuota" placeholder="Ej: 03/06" autocomplete="off"></label>
-      <label class="campo grupo-usd">USD comprados<input id="fUsd" inputmode="decimal" placeholder="0" autocomplete="off"></label>
+      <label class="campo grupo-usd">USD que compraste<input id="fUsd" inputmode="decimal" placeholder="0" autocomplete="off"></label>
     </div>
     <div class="acc">
       <button type="button" class="btn peligro oculto" id="borrar">Eliminar</button>
@@ -366,8 +370,9 @@
     <div class="ed-h"><h3>Agregar</h3><button type="button" id="cerrarMenu" aria-label="Cerrar">×</button></div>
     <button data-nuevo="Gasto"><span class="e">🧾</span><span>Gasto<small>Compra, pago, transferencia</small></span></button>
     <button data-nuevo="Ingreso"><span class="e">💵</span><span>Ingreso<small>Emprendimiento, sueldo, cobros</small></span></button>
-    <button data-nuevo="Ahorro"><span class="e">💰</span><span>Ahorro<small>Compra de dólares</small></span></button>
+    <button data-nuevo="Ahorro"><span class="e">💰</span><span>Compra de dólares<small>Pesos que pasaste a USD y cuántos USD</small></span></button>
     <button data-nuevo="Saldo"><span class="e">🏦</span><span>Ajustar saldo<small>Lo que tenés hoy en tus cuentas</small></span></button>
+    <button data-nuevo="SaldoUSD"><span class="e">🇺🇸</span><span>Ajustar dólares ahorrados<small>Cuántos USD tenés hoy</small></span></button>
     <button data-nuevo="Resumen"><span class="e">📄</span><span>Cargar resumen de tarjeta<small>PDF del banco: lo leo y categorizo</small></span></button>
   </div>
 </dialog>
@@ -697,7 +702,7 @@ function abrirEditor(f, clase) {
   modoSaldo = /^Saldo/.test(clase || '');
   modoUsd = clase === 'SaldoUSD';
   const tipoNuevo = clase === 'Ingreso' ? 'Ingreso' : 'Gasto';
-  $('edTit').textContent = modoUsd ? 'Dólares ahorrados hoy' : modoSaldo ? 'Saldo actual' : f ? 'Editar movimiento' : { Gasto: 'Nuevo gasto', Ingreso: 'Nuevo ingreso', Ahorro: 'Nuevo ahorro' }[clase];
+  $('edTit').textContent = modoUsd ? 'Dólares ahorrados hoy' : modoSaldo ? 'Saldo actual' : f ? 'Editar movimiento' : { Gasto: 'Nuevo gasto', Ingreso: 'Nuevo ingreso', Ahorro: 'Compra de dólares' }[clase];
   setSeg('segTipo', 't', f ? (esIngreso(f) ? 'Ingreso' : 'Gasto') : tipoNuevo);
   setSeg('segClase', 'c', f && f.clase === 'Fijo' ? 'Fijo' : 'Variable');
   const sa = modoSaldo && !f ? (modoUsd ? usdActual() : saldoActual()) : null;
@@ -751,6 +756,9 @@ $('menu').addEventListener('click', e => {
 });
 $('kSaldoBtn').onclick = () => abrirEditor(null, 'Saldo');
 $('aUsdBtn').onclick = () => abrirEditor(null, 'SaldoUSD');
+$('aAjustar').onclick = () => abrirEditor(null, 'SaldoUSD');
+$('aComprar').onclick = () => abrirEditor(null, 'Ahorro');
+$('kAhoBtn').onclick = () => irA('ahorros');
 $('irResumen').onclick = () => irA('importar');
 $('cerrar').onclick = () => $('dlg').close();
 $('dlg').addEventListener('click', e => { if (e.target === $('dlg')) $('dlg').close(); });
