@@ -282,7 +282,7 @@ function lista(arr) {
   $('lista').innerHTML = visibles.length ? visibles.map(f => `
     <div class="mov">
       <div class="d">${esc(f.descripcion)}</div>
-      <div class="m">${f.fecha.slice(8, 10)}/${f.fecha.slice(5, 7)} · ${esc(f.categoria)}${f.subcategoria ? ' · ' + esc(f.subcategoria) : ''} ${f.medio ? ' · ' + esc(f.medio) : ''}${f.cuota ? ' · ' + esc(f.cuota) : ''}</div>
+      <div class="m">${f.fecha.slice(8, 10)}/${f.fecha.slice(5, 7)} · ${esc(f.categoria)}${f.subcategoria ? ' · ' + esc(f.subcategoria) : ''}${f.medio ? ' · ' + esc(f.medio) : ''}${f.cuota ? ' · ' + esc(f.cuota) : ''}</div>
       <div class="a ${f.tipo === 'Ingreso' ? 'pos' : ''}">${f.tipo === 'Ingreso' ? '+' : ''}${fmt.format(f.monto)}</div>
       <button class="x" data-id="${esc(f.id)}" aria-label="Borrar">×</button>
     </div>`).join('') + (filas.length > visibles.length ? `<button class="mas" id="verMas">Ver ${filas.length - visibles.length} más</button>` : '')
